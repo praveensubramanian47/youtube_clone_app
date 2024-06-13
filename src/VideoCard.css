@@ -1,0 +1,140 @@
+.videoCard {
+    margin-bottom: 40px;
+    width: 260px;
+}
+
+.videoCard_img {
+    height: 140px;
+    width: 250px;
+    cursor: pointer;
+    object-fit: cover;
+
+}
+
+.videoCard_img_wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.videoCard_duration {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 2px 4px;
+    font-size: 12px;
+    border-radius: 2px;
+}
+
+.videoCard .videocard_info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-right: 30px;
+    margin-left: 10px;
+}
+
+.videoCard .videoCard_text {
+    margin-left: 15px;
+}
+
+.videoCard_text>h4 {
+    font-size: 15px;
+    margin-bottom: 5px;
+}
+
+.videoCard_text>p {
+    font-size: 14px;
+    color: gray;
+}
+
+.video_feature {
+    font-size: 10px;
+    color: gray;
+    cursor: pointer;
+}
+
+.videoCard_avatar>img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.toggle {
+    position: relative;
+    display: inline-block;
+}
+
+.playlist_options,
+.playlist_functions {
+    position: absolute;
+    top: -100%;
+    right: 0;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 8px;
+    border-radius: 4px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 7rem;
+}
+
+.playlist_functions {
+    width: 200px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.playlist_functions input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    outline: none;
+}
+
+.playlist_functions button {
+    margin-left: 8px;
+    padding: 8px 16px;
+    background-color: none;
+    color: #007bff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.playlist_options svg,
+.playlist_functions svg {
+    cursor: pointer;
+    color: #333;
+    transition: color 0.3s ease;
+}
+
+.playlist_options svg:hover,
+.playlist_functions svg:hover {
+    color: #555;
+}
+
+
+.playlist_options span {
+    font-size: 12px;
+    margin-left: 10px;
+    color: black;
+}
+
+.create_playlist {
+    display: flex;
+    align-items: center;
+}
+
+.add_playlist {
+    display: flex;
+    align-items: center;
+}

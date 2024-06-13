@@ -1,0 +1,78 @@
+.UploadVideo{
+    background-color: #c7c2c2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.heading{
+    background-color: #ffffff;
+    height: 30rem;
+    width: 50rem;
+    padding: 5px;
+    position: sticky;
+    margin-top: 5rem;
+    margin-bottom: 4.4rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px black;
+}
+.heading > h3{
+    padding: 10px;
+}
+.heading > hr{
+    height: 1px;
+    border: 0;
+    background-color: lightgray;
+    margin-top: 10px;
+}
+.uploadIcon{
+    display: flex;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    height: 10rem;
+    width: 10rem;
+    border-radius: 50%;
+    margin-left: 19.5rem;
+    margin-top: 3rem;
+    cursor: pointer;
+    color: #909090;
+    background-color: #f7f7f7;
+}
+.contents{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    margin-top: 3rem;
+}
+.para1{
+    text-align: center;
+    font-size: 15px !important;
+    font-weight: 500;
+    margin-top: 1rem;
+}
+.para2{
+    color: #909090;
+    margin-top: 0.7rem;
+    font-size: 15px !important;
+    text-align: center;
+}
+.upload_btn{
+    display: flex;
+}
+.button{
+    margin-top: 1rem;
+    width: 8rem;
+    height: 2rem;
+    background-color: #065fd4d0;
+    color: #ffffff;
+    border-radius: 0;
+    border: none;
+    margin-left: 11rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+.heading > p{
+    text-align: center;
+    margin-top: 1rem;
+}

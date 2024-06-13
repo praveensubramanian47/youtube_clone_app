@@ -1,0 +1,92 @@
+.PlayListVideos {
+    flex: 0.9;
+    padding: 40px 20px;
+    background-color: #f9f9f9;
+    padding-bottom: 0;
+}
+
+.playlist_left {
+    width: 23rem;
+    height: 32rem;
+    position: relative; /* Added for positioning the blurred background */
+    z-index: 1; /* Added to ensure content is above the blurred background */
+    overflow-y: hidden ;
+    border-radius: 10px;
+    color: rgba(223, 208, 208, 0); /* Adding a semi-transparent light background */
+    backdrop-filter: blur(30px); /* Ensures the blurred background effect */
+}
+
+.container {
+    padding: 1.5rem;
+    color: white; /* Added to ensure text is readable against the background */
+}
+
+.playlist_left::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg');
+    background-size: cover;
+    background-position: center;
+    filter: blur(30px);
+    z-index: -1; /* Added to place the pseudo-element behind the content */
+}
+
+.container .img {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.img img {
+    width: 20rem;
+    height: 13rem;
+    border-radius: 10px;
+}
+
+.container h3{
+    margin-top: 1rem;
+    font-size: 1.5rem;
+}
+
+.details h6{
+    margin-top: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.details p{
+    margin-top: 5px;
+    font-size: 12px;
+}
+
+.icons{
+    margin-top: 1rem;
+    width: 6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.download {
+    border: 1px solid black;
+    width: 2.3rem;
+    height: 2.3rem;
+    border-radius: 50%; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.more{
+    border: 1px solid black;
+    width: 2.3rem;
+    height: 2.3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

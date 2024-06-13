@@ -1,0 +1,46 @@
+.side-video-list{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.side-video-list img{
+    width: 15rem;
+    height: 8rem;
+    cursor: pointer;
+    object-fit: cover;
+    border-radius: 10px;
+}
+.vid-info{
+    flex-basis: 49%;
+    margin-left: 5px;
+}
+.vid-info h4{
+    font-size: 15px;
+    margin-bottom: 8px;
+}
+
+.vid-info p {
+    font-size: 13px;
+    color: gray;
+}
+
+.views_style{
+    margin-top: 2px;
+}
+
+.FetchedVideo_img_wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.FetchedVideo_duration {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 2px 4px;
+    font-size: 12px;
+    border-radius: 2px;
+}

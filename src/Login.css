@@ -1,0 +1,100 @@
+.Login{
+    display: flex;
+    justify-content: center;
+    margin-top: 7rem;
+}
+
+.login_content h2{
+    display: flex;
+    align-items: center;
+    justify-content: center;    
+}
+
+.Login .login_content{
+    align-items: center;
+    justify-content: center;
+    border: 1px solid black;
+    padding: 25px;
+    border-radius: 10px;
+}
+.login_content input{
+    width: 20rem;
+    height: 2.3rem;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    border: 1px black solid;
+    padding-left: 8px;
+}
+
+.rememberMe{
+    font-size: 13px;
+    display: flex;
+}
+.rememberMe .checkbox{
+    display: flex;
+}
+
+.rememberMe input{
+    width: 1rem;
+    cursor: pointer;
+}
+.rememberMe label{ 
+    margin-left: 4px;
+    margin-top: 9px;
+}
+.ink-no-style {
+    text-decoration: none;
+    color: inherit;
+  }
+.ink-no-style label{
+    cursor: pointer;
+}
+.checkbox2{
+    margin-top: 9px;
+    margin-left: 7.5rem;
+}
+  
+.login_content button{
+    width: 20.5rem;
+    height: 2.3rem;
+    border-radius: 25px;
+    border: 1px black solid;
+    margin-top: 5px;
+    background-color: black;
+    color: #ffffff;
+    cursor: pointer;
+}
+.login_withOther{
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.login_withOther > hr{
+    flex: 0.4;
+}
+
+.login_withIcon{
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    margin-top: 1.5rem;
+}
+
+.login_withIcon .icons{
+    font-size: 19px;
+}
+
+.register{
+    display: flex;
+    justify-content: center;
+    margin-top: 1.8rem;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.register span{
+    color: green;
+    margin-left: 2px;
+}

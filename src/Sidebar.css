@@ -1,0 +1,18 @@
+.sidebar {
+    flex: 0.2;
+    position: -webkit-sticky; /* For Safari */
+    position: sticky;
+    top: 0;
+}   
+
+.sidebar > hr{
+    height: 1px;
+    border: 0;
+    background-color: lightgray;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+.ink-no-style {
+    text-decoration: none;
+    color: inherit;
+}
