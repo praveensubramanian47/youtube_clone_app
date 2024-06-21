@@ -1,33 +1,33 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import "./VideoPlayer.css";
 import PlayVideo from "./PlayVideo";
 import FetchedVideo from "./FetchedVideo";
 import { useVideo } from "./VideoContext";
 
+// Function to get a cookie value by name
 function getCookie(name) {
   const nameEQ = name + "=";
-  const ca = document.cookie.split(';');
+  const ca = document.cookie.split(";");
   for (let i = 0; i < ca.length; i++) {
     let c = ca[i];
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    while (c.charAt(0) === " ") c = c.substring(1, c.length);
     if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
   }
   return null;
 }
 
 function VideoPlayer() {
-
-  const token = getCookie('token');
-
+  const token = getCookie("token");
+  const video_id = getCookie("video_id");
+  const userId = getCookie("user_id");
+  
+  const { videoDetails } = useVideo();
+  // const [videoId, setVideoId] = useState(initialVideoId);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // const { token } = useContext(AuthContext);
-
-  const { videoDetails } = useVideo();
-
-  const video_id = videoDetails.id;
+  // Fetch related videos based on videoId
   const fetchInfo = async (retryCount = 2) => {
     try {
       const response = await fetch(
@@ -43,7 +43,6 @@ function VideoPlayer() {
         const errorText = await response.text();
         console.log("Error Response Text:", errorText);
         const errorData = JSON.parse(errorText);
-
         throw new Error(errorData.message);
       }
 
@@ -66,7 +65,9 @@ function VideoPlayer() {
     if (token) {
       fetchInfo();
     }
-  }, [token]);
+  }, [token, video_id]);
+
+  console.log()
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -79,6 +80,7 @@ function VideoPlayer() {
       <div className="FetchedVideo">
         {data.related_videos.map((item) => (
           <FetchedVideo
+            key={item.id} // Ensure you provide a unique key
             id={item.id}
             title={item.name}
             video={item.video_url}

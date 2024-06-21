@@ -1,0 +1,27 @@
+.shortsRow {
+    align-items: center;
+    cursor: pointer;
+}
+
+.shortsRow img {
+    width: 200px;
+    height: 350px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.shortsRow_text {
+    width: 200px;
+    margin-left: 5px;
+}
+
+.shortsRow_text h3 {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.shortsRow_headline {
+    color: gray;
+    font-size: 12px;
+    text-align: center;
+}

@@ -2,80 +2,109 @@ import React, { useEffect, useState } from 'react';
 import ShortCard from './ShortCard';
 import "./Shorts.css";
 
+function getCookie(name) {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+}
+
 function Shorts() {
-  //const [data, setData] = useState(null);
-  const [count, setCount] = useState(0); // State for count
-  const [videosArray, setVideosArray] = useState(0); 
+  const [videosArray, setVideosArray] = useState([]); // Initialize as empty array
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [count, setCount] = useState(0);
+
+  const token = getCookie('token');
+  const userId = getCookie('user_id');
+  
+  const fetchShortInfo = async (retryCount = 2) => {
+    const requestBody = {
+      user_id: userId,
+    };
+    
+    try {
+      const response = await fetch("https://insightech.cloud/videotube/api/public/api/shortsfetch", {
+        method: "POST",
+        headers:{
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        const errorData = JSON.parse(errorText);
+        throw new Error(errorData.message);
+      }
+
+      const result = await response.json();
+      setVideosArray(result.data);
+    } catch (error) {
+      if (retryCount > 0) {
+        await fetchShortInfo(retryCount - 1);
+      } else {
+        setError(error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchShortInfo();
+    }
+  }, [token, userId]);
   
   useEffect(() => {
-    const fetchVideo = async () => {
-      try {
-        // https://insightech.cloud/videotube/api/public/api/shorts
-        const response =  await fetch('http://127.0.0.1:8000/api/shorts');
-        if (!response.ok) {
-          throw new Error('Failed to fetch data');
-        }
-        const data = await response.json();
-        // Assuming the API returns an object with a single video
-
-        const videosArray = Array.isArray(data.status) ? Array.from(data.status) : [];
-        setVideosArray(videosArray)
-
-        console.log(videosArray[0])
-
-      } catch (error) {
-        console.error(error);
-      }
-    }; 
-
-    fetchVideo();
-  }, []);
+    console.log("Videos Array:", videosArray); // Log the entire array
+    if (videosArray[count]) {
+      console.log("Current Video Object:", videosArray[count]); // Log the specific video object
+    }
+  }, [videosArray, count]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === 'ArrowDown') {
-        // Increase count by 1
+      if (event.key === 'ArrowDown' && count < videosArray.length - 1) {
         setCount(prevCount => prevCount + 1);
-
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-
-    // Clean up event listener
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-
-  }, []);
-
-  useEffect(() => {
-    const handleKeyUp = (event) => {
-      if (event.key === 'ArrowUp') {
+      } else if (event.key === 'ArrowUp' && count > 0) {
         setCount(prevCount => prevCount - 1);
       }
     };
-    document.addEventListener('keyup', handleKeyUp);
+    
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [count, videosArray.length]);
 
-
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className='Shorts'>
       <div className='short'>
         <div className='Short-content'>
-          {videosArray[count] && (
+          {videosArray.length > 0 && videosArray[count] && (
             <ShortCard
-              video={videosArray[count].video_url}
-              title={videosArray[count].description}
-              channel={videosArray[count].name}
-              channelImage="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg"
+              id={videosArray[count].id}
+              video_url={videosArray[count].video_url}
+              title={videosArray[count].name}
+              description={videosArray[count].description}
+              channelImage={videosArray[count].profile_image}
               thumb="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg"
               like={videosArray[count].likes}
-              comment={videosArray[count].comment}
+              dislike={videosArray[count].dislikes}
+              isLiked={videosArray[count].isLiked || false}
+              isDisLiked={videosArray[count].isDisliked || false}
+              count={count}
             />
           )}
         </div>

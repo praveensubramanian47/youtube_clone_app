@@ -1,0 +1,126 @@
+.ShortComment{
+    margin: 0;
+    margin-bottom: 20rem;
+    margin-right: 20rem;
+}
+.short-comments {
+    position: absolute;
+    background-color: white;
+    color: black;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    width: 400px;
+    height: 31.5rem;
+    overflow-y: auto;
+}
+
+.comments-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.comments-section {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.comment-info {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    margin-top: 1rem;
+}
+
+.cmd-img img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 12px;
+}
+
+.cmd-details {
+    flex-grow: 1;
+}
+
+.cmd-details p {
+    margin: 0;
+}
+
+.cmd-details span {
+    font-size: 12px;
+    color: #666;
+}
+
+.cmd {
+    margin-top: 4px;
+}
+
+.shortcmd-action {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.shortcmd-action .shortaction {
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.shortcmd-action span {
+    font-size: 14px;
+    color: #666;
+    margin-right: 12px;
+}
+
+.add-shortscomment {
+    position: sticky;
+}
+
+.shorts-cmd {
+    display: flex;
+}
+
+.shorts-cmd img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 12px;
+}
+
+.shorts-cmd input {
+    margin-top: 10px;
+    outline: none;
+    width: 330px;
+    border: 0;
+}
+
+.shorts-cmd hr {
+    margin-top: 5px;
+    width: 330px;
+}
+
+.shorts-btns {
+    margin-top: 5px;
+    display: flex;
+    justify-content: end;
+}
+
+.shorts-btns button {
+    height: 30px;
+    width: 90px;
+    border-radius: 10px;
+    border: 0;
+    cursor: pointer;
+}
+
+.short-btn1 {
+    margin-right: 10px;
+}
+
+.short-btn2 {
+    background-color: blue;
+    color: #fff;
+}

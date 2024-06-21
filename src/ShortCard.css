@@ -1,5 +1,15 @@
-.shorts-container {
+/* ShortCard.css */
+.comment-container {
   display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Align items to the top */
+  transition: transform 0.3s ease;
+  position: relative; /* Added to allow absolute positioning of children */
+}
+
+.shorts-container {
+  flex-shrink: 0; /* Prevent shrinking */
+  transition: transform 0.3s ease;
 }
 
 .centered-video {
@@ -9,7 +19,6 @@
   border-radius: 10px;
   display: block;
   margin: 0 auto;
-  border: 1px solid black !important;
 }
 
 .shorts-video {
@@ -29,8 +38,14 @@
 }
 
 .shorts_icons {
-  margin-left: 1rem;
-  margin-top: 1.8rem;
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  color: white;
+  padding: 2px 4px;
+  font-size: 12px;
+  border-radius: 2px;
+  margin-bottom: 5rem;
 }
 
 .icon {
@@ -40,15 +55,17 @@
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
-  background-color: lightgray;
+  background-color: rgba(0, 0, 0, 0.7);
   margin-top: 1.5rem;
   cursor: pointer;
 }
 
-.shorts_icons>p {
+.shorts_icons > p {
   text-align: center;
   margin-top: 3px;
   font-size: 13px;
+  font-weight: bold;
+  color: black;
 }
 
 .icon.active {
@@ -64,142 +81,40 @@
 .channel_details {
   display: flex;
   align-items: center;
-  justify-content: space-around;
+  justify-content: flex-start;
   margin-bottom: 0.5rem;
+  margin-left: 5px;
+}
+
+.channel_details .title {
+  margin-left: 1rem;
 }
 
 .shorts_desc {
   padding: 5px;
 }
 
-.shorts_btn {
-  height: 2rem;
-  width: 5rem;
-  border-radius: 25px;
-  border: none;
-}
-
-.short-comments {
-  position: absolute;
+.show_comments {
+  width: 20rem; /* Same width as the video */
+  height: 34rem; /* Same height as the video */
+  transition: transform 0.3s ease, opacity 0.3s ease;
   background-color: white;
-  padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 1;
-  width: 400px;
-  max-height: 400px;
-  /* Adjust the maximum height as needed */
-  overflow-y: auto;
-  /* Add scrolling functionality */
-}
-
-.comments-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.comments-section {
-  max-height: 300px;
-  /* Adjust the maximum height of the comments section as needed */
-  overflow-y: auto;
-  /* Add scrolling functionality */
-}
-
-.comment-info {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 16px;
-  margin-top: 1rem;
-}
-
-.cmd-img img {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  margin-right: 12px;
-}
-
-.cmd-details {
-  flex-grow: 1;
-}
-
-.cmd-details p {
-  margin: 0;
-}
-
-.cmd-details span{
-  font-size: 12px;
-  color: #666;
-} 
-
-.cmd {
-  margin-top: 4px;
-}
-
-.shortcmd-action {
-  display: flex;
-  align-items: center;
-  margin-top: 8px;
-}
-
-.shortcmd-action .shortaction {
-  cursor: pointer;
-  margin-right: 8px;
-}
-
-.shortcmd-action span {
-  font-size: 14px;
-  color: #666;
-  margin-right: 12px;
-}
-
-.add-shortscomment{
-  position: sticky;
-}
-
-.shorts-cmd {
-  display: flex;
-}
-
-.shorts-cmd img {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  margin-right: 12px;
-}
-
-.shorts-cmd input {
-  margin-top: 10px;
-  outline: none;
-  width: 330px;
-  border: 0;
-}
-
-.shorts-cmd hr{
-  margin-top: 5px;
-  width: 330px;
-}
-
-.shorts-btns {
-  margin-top: 5px;
-  display: flex;
-  justify-content: end;
-}
-
-.shorts-btns button{
-  height: 30px;
-  width: 90px;
+  border: 1px solid #ccc;
   border-radius: 10px;
-  border: 0;
-  cursor: pointer;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute; /* Positioned absolutely relative to the container */
+  left: 100%; /* Start off-screen to the right */
+  top: 0; /* Align with the top of the container */
 }
 
-.short-btn1{
-  margin-right: 10px;
+.show_comments.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-100%); /* Move into view */
 }
 
-.short-btn2{
-  background-color: blue;
-  color: #fff;
+.comment-container.open .shorts-container {
+  transform: translateX(-2px); /* Move the shorts to the left when open */
 }

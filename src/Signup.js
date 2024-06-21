@@ -65,7 +65,7 @@ function Signup() {
         <div className='signup_withIcon'>
           <FontAwesomeIcon icon={faGoogle} />
           <FontAwesomeIcon icon={faFacebookF} />
-          <FontAwesomeIcon className='icons' icon={faApple} />
+          <FontAwesomeIcon className='apple' icon={faApple} />
         </div>
 
         <div className='sign'>

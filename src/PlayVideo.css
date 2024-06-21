@@ -181,6 +181,51 @@
     border-radius: 2px;
 }
 
+.settings-menu {
+    position: absolute;
+    bottom: 50px;
+    color: #000;
+    right: 80px;
+    background-color: #00000078;
+    padding: 10px;
+    z-index: 10;
+    border-radius: 10px;
+}
+
+.settings-item {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.play_fun, .play_fun button{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: bold;
+    color: #fff;
+}
+
+
+.play_fun label {
+    margin-left: 5px;
+    font-size: 13px;
+}
+
+.play_fun button {
+    font-size: 13px;
+    margin-left: 50px;
+}
+
+.settings-item select{
+    margin-left: 10px;
+    padding: 5px;
+    color: #000;
+    border: none;
+    outline: none;
+}
+
 .play-video h3 {
     margin-top: 10px;
     font-weight: 600;

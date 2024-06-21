@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import "./PlayVideo.css";
-import AddComments from "./AddComments";
+import VideoComments from "./VideoComments";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import ReplySharpIcon from "@mui/icons-material/ReplySharp";
@@ -13,9 +13,11 @@ import FullscreenExitSharpIcon from "@mui/icons-material/FullscreenExitSharp";
 import SettingsSharpIcon from "@mui/icons-material/SettingsSharp";
 import MoreHorizSharpIcon from "@mui/icons-material/MoreHorizSharp";
 import BrandingWatermarkSharpIcon from "@mui/icons-material/BrandingWatermarkSharp";
+import SlowMotionVideoSharpIcon from "@mui/icons-material/SlowMotionVideoSharp";
+import TuneSharpIcon from "@mui/icons-material/TuneSharp";
+import DownloadSharpIcon from "@mui/icons-material/DownloadSharp";
 import CloseSharpIcon from "@mui/icons-material/CloseSharp";
 import { useVideo } from "./VideoContext";
-import { useUser } from "./UserContext";
 
 function getCookie(name) {
   const nameEQ = name + "=";
@@ -33,7 +35,10 @@ function PlayVideo() {
   const token = getCookie("token");
   const userId = getCookie("user_id");
   const username = getCookie("user_name");
+  const video_id = getCookie("video_id");
+  const durations = getCookie("duration");
 
+  console.log("Video id",video_id);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,6 +53,13 @@ function PlayVideo() {
   const [isMainPlayerPlaying, setIsMainPlayerPlaying] = useState(false);
   const [isMiniPlayerPlaying, setIsMiniPlayerPlaying] = useState(false);
 
+  //Seetings
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [selectedResolution, setSelectedResolution] = useState("");
+  const [selectedQuality, setSelectedQuality] = useState();
+  const [availableQualities, setAvailableQualities] = useState([]);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -61,32 +73,19 @@ function PlayVideo() {
   const [likeCount, setLikeCount] = useState(0);
   const [dislikeCount, setDislikeCount] = useState(0);
 
-  //Comments like and dislike
-  const [commentsLikedId, setCommentsLikeId] = useState([]);
-  const [commentsDislikedId, setCommentsDisLikeId] = useState([]);
-
-  const [commentThumbUpClicked, setCommentThumbUpClicked] = useState(false);
-  const [commentThumbDownClicked, setCommentThumbDownClicked] = useState(false);
-
-  const [commentsUserName, setCommentsUserName] = useState(null);
-  const [commentUserId, setCommetUserId] = useState(0);
-  const [commentId, setCommentId] = useState(0);
-  const [commentLikeCount, setCommentLikeCount] = useState(0);
-  const [commentDislikeCount, setCommentDisLikeCount] = useState(0);
-
   //Subscribe
   const [subscribed, setSubscribed] = useState(false);
 
   // const videoId = `?video_id=${videoDetails.id}`;
 
-  console.log(videoDetails.id);
+  // console.log("ID",videoDetails.id);
 
   useEffect(() => {
     console.log(token);
     const videoInfo = async (retryCount = 3) => {
       try {
         const response = await fetch(
-          `https://insightech.cloud/videotube/api/public/api/videoplay?video_id=${videoDetails.id}`,
+          `https://insightech.cloud/videotube/api/public/api/videoplay?video_id=${video_id}&user_id=${userId}`,
           {
             method: "GET",
             headers: {
@@ -99,7 +98,14 @@ function PlayVideo() {
           throw new Error(errorText || "Network response was not ok");
         }
         const result = await response.json();
-        console.log("Video Info:", result); // Log the response data
+        setSelectedResolution(result.video.video_url); // Default resolution
+        // Set available qualities
+        if (result.video && result.video.resolutions) {
+          const qualities = result.video.resolutions.map(
+            (res) => res.resolution
+          );
+          setAvailableQualities(qualities);
+        }
         setData(result);
       } catch (error) {
         if (retryCount > 0) {
@@ -115,7 +121,7 @@ function PlayVideo() {
     if (token) {
       videoInfo();
     }
-  }, [token, videoDetails.id]);
+  }, [token, video_id]);
 
   // Video player setup
   useEffect(() => {
@@ -127,12 +133,17 @@ function PlayVideo() {
 
     if (video && seekBar) {
       const handlePlayPause = () => {
-        if (video.paused) {
-          video.play();
-          setIsPlaying(true);
-        } else {
-          video.pause();
-          setIsPlaying(false);
+        if (videoRef.current) {
+          if (videoRef.current.paused) {
+            videoRef.current.play().then(() => {
+              setIsPlaying(true);
+            }).catch(error => {
+              console.error('Error playing video:', error);
+            });
+          } else {
+            videoRef.current.pause();
+            setIsPlaying(false);
+          }
         }
       };
 
@@ -267,19 +278,64 @@ function PlayVideo() {
     if (data && data.video) {
       setLikeCount(data.video.likes ?? 0);
       setDislikeCount(data.video.dislikes ?? 0);
-      // // setCommentLikeCount(data.video.comments)
-      // setThumbUpClicked(data.video.isVideoLike ?? false);
-      // setThumbDownClicked(data.video.isVideoDislike ?? false);
     }
   }, [data]);
 
-  const user_id = `&user_id=${userId}`;
+  const togglePlayPause = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch(error => {
+          console.error('Error playing video:', error);
+        });
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  //Settings
+  const toggleSettings = () => {
+    setIsSettingsOpen(!isSettingsOpen);
+  };
+
+  //play by speed
+  const handleSpeedChange = (event) => {
+    const speed = event.target.value;
+    setPlaybackSpeed(speed);
+    videoRef.current.playbackRate = speed;
+  };
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.src = selectedResolution;
+      videoRef.current.play();
+    }
+  }, [selectedResolution]);
+
+  //PLlay by quality
+  const handleResolutionChange = (e) => {
+    setSelectedResolution(e.target.value);
+  };
+
+  //Download
+  const handleDownload = () => {
+    const videoUrl = data.video.video_url; // Use the actual URL from your data
+    const link = document.createElement("a");
+    link.href = videoUrl;
+    link.download = `${data.video.name}.mp4`; // Give a default name to the downloaded file
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Function to fetch info
   const videoAllInfo = async (retryCount = 2) => {
     try {
       const response = await fetch(
-        `https://insightech.cloud/videotube/api/public/api/videoplay?video_id=${videoDetails.id}&user_id=${userId}`,
+        `https://insightech.cloud/videotube/api/public/api/videoplay?video_id=${video_id}&user_id=${userId}`,
         {
           method: "GET",
           headers: {
@@ -307,15 +363,13 @@ function PlayVideo() {
       setLoading(false);
     }
   };
-  
-
 
   useEffect(() => {
     if (token) {
       setLoading(true);
       videoAllInfo();
     }
-  }, [token, videoDetails.id, userId]);
+  }, [token, video_id, userId]);
 
   //Like
 
@@ -324,7 +378,7 @@ function PlayVideo() {
 
     const requestBody = {
       user_id: userId,
-      video_id: videoDetails.id,
+      video_id: video_id,
       is_like: newThumbUpState,
     };
 
@@ -368,7 +422,7 @@ function PlayVideo() {
 
     const requestBody = {
       user_id: userId,
-      video_id: videoDetails.id,
+      video_id: video_id,
       is_dislike: newThumbDownState,
     };
 
@@ -475,13 +529,6 @@ function PlayVideo() {
     }
   };
 
-  //Resolution
-  const [selectedResolution, setSelectedResolution] = useState(null);
-  const handleResolutionChange = (resolution) => {
-    setSelectedResolution(resolution);
-  };
-
-
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -489,8 +536,12 @@ function PlayVideo() {
     <div className="play-video">
       <div className="video-container">
         {data && data.video && (
-          <video id="my-video" ref={videoRef}>
-            <source src={data.video.video_url} type="video/mp4" />
+          <video
+            ref={videoRef}
+            width="100%"
+            onError={(e) => console.error("Video error:", e)}
+          >
+            <source src={selectedResolution} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         )}
@@ -515,7 +566,7 @@ function PlayVideo() {
               </p>
             </div>
             <div className="part-2">
-              <button id="settings">
+              <button id="settings" onClick={toggleSettings}>
                 <SettingsSharpIcon />
               </button>
               <button id="mini-player" onClick={toggleMiniPlayer}>
@@ -530,6 +581,49 @@ function PlayVideo() {
               </button>
             </div>
           </div>
+          {isSettingsOpen && (
+            <div className="settings-menu">
+              <div className="settings-item">
+                <div className="play_fun">
+                  <SlowMotionVideoSharpIcon />
+                  <label htmlFor="speed"> Speed:</label>
+                </div>
+                <select
+                  id="speed"
+                  value={playbackSpeed}
+                  onChange={handleSpeedChange}
+                >
+                  <option value="0.5">0.5x</option>
+                  <option value="1">1x</option>
+                  <option value="1.5">1.5x</option>
+                  <option value="2">2x</option>
+                </select>
+              </div>
+              <div className="settings-item">
+                <div className="play_fun">
+                  <TuneSharpIcon />
+                  <label htmlFor="quality">Quality:</label>
+                </div>
+                <select
+                  id="resolution"
+                  value={selectedResolution}
+                  onChange={handleResolutionChange}
+                >
+                  {data.video.resolutions.map((res) => (
+                    <option key={res.id} value={res.resolution_url}>
+                      {res.resolution}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="settings-item">
+                <div className="play_fun">
+                  <DownloadSharpIcon />
+                  <button onClick={handleDownload}>Download</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       {isMiniPlayer && (
@@ -637,7 +731,12 @@ function PlayVideo() {
         )}
         <hr />
         {data && data.video && (
-          <AddComments token={token} userId={userId} videoId={data.video.id} comments={data}/>
+          <VideoComments
+            token={token}
+            userId={userId}
+            videoId={data.video.id}
+            username={username}
+          />
         )}
       </div>
     </div>

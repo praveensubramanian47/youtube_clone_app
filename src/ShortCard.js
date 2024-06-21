@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import "./ShortCard.css";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
@@ -6,87 +6,225 @@ import CommentSharpIcon from "@mui/icons-material/CommentSharp";
 import ReplySharpIcon from "@mui/icons-material/ReplySharp";
 import MoreVertSharpIcon from "@mui/icons-material/MoreVertSharp";
 import Avatar from "@mui/material/Avatar";
-import CloseSharpIcon from "@mui/icons-material/CloseSharp";
+import ShortComment from "./ShortComment";
+
+function getCookie(name) {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(";");
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === " ") c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+}
 
 function ShortCard({
-  thumb,
-  video,
+  id,
+  description,
+  video_url,
   title,
-  channel,
   channelImage,
   like,
-  comment,
+  dislike,
+  count,
 }) {
+  const token = getCookie("token");
+  const userId = getCookie("user_id");
+  const username = getCookie("user_name");
+
+  const [showComment, setShowComment] = useState(false);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   // Like and unlike
   const [thumbUpClicked, setThumbUpClicked] = useState(false);
   const [thumbDownClicked, setThumbDownClicked] = useState(false);
   const [likeCount, setLikeCount] = useState(parseInt(like) || 0);
+  const [dislikeCount, setDislikeCount] = useState(parseInt(dislike) || 0);
 
+  //Comment length
+  const [commentLength, setCommentLength] = useState(0);
+
+  const toggleComment = () => {
+    setShowComment(!showComment);
+  };
+
+  //Fetch shorts info for that particular user.
+  const shortAllInfo = async (retryCount = 2) => {
+    const requestBody = {
+      user_id: userId,
+      short_id: id,
+    };
+
+    console.log(userId, id);
+
+    try {
+      const response = await fetch(
+        "https://insightech.cloud/videotube/api/public/api/shortsfetch",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
+      if (!response.ok) {
+        const errorText = await response.text();
+        const errorData = JSON.parse(errorText);
+        throw new Error(errorData.message);
+      }
+
+      const result = await response.json();
+      console.log(result.data[count]);
+      setThumbUpClicked(result.data[count].isLiked);
+      setThumbDownClicked(result.data[count].isDisliked);
+      setLikeCount(result.data[count].likes);
+      setDislikeCount(result.data[count].dislikes);
+      setCommentLength(result.data[count].comments.length);
+    } catch (error) {
+      if (retryCount > 0) {
+        await shortAllInfo(retryCount - 1);
+      } else {
+        setError(error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      setLoading(true);
+      shortAllInfo();
+    }
+  }, [token, id, userId]);
+
+  console.log(thumbUpClicked, thumbDownClicked);
+
+  //Like
   const handleThumbUpClick = () => {
-    if (thumbUpClicked) {
-      setLikeCount(likeCount - 1);
-    } else {
-      setLikeCount(likeCount + 1);
-      if (thumbDownClicked) {
-        setThumbDownClicked(false);
-      }
-    }
-    setThumbUpClicked(!thumbUpClicked);
+    const newThumbUpState = !thumbUpClicked;
+
+    const requestBody = {
+      user_id: userId,
+      shorts_id: id,
+      is_liked: newThumbUpState,
+    };
+
+    console.log("Like:", requestBody);
+
+    fetch("https://insightech.cloud/videotube/api/public/api/shortslike", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.code === 200) {
+          setThumbUpClicked(newThumbUpState);
+          setLikeCount(newThumbUpState ? likeCount + 1 : likeCount - 1);
+
+          if (thumbDownClicked) {
+            setThumbDownClicked(false);
+            setDislikeCount(dislikeCount - 1);
+          }
+
+          console.log(data.message);
+        } else {
+          console.error("Error from like:", data.message);
+        }
+      })
+      .catch((error) => {
+        console.error("Error from like:", error);
+      });
   };
 
+  //dislike
   const handleThumbDownClick = () => {
-    if (thumbDownClicked) {
-      setThumbDownClicked(false);
-    } else {
-      if (thumbUpClicked) {
-        setLikeCount(likeCount - 1);
-        setThumbUpClicked(false);
-      }
-      setThumbDownClicked(true);
-    }
+    const newThumbDownState = !thumbDownClicked;
+
+    const requestBody = {
+      user_id: userId,
+      shorts_id: id,
+      is_disliked: newThumbDownState,
+    };
+
+    console.log("Dislike:", requestBody);
+
+    fetch("https://insightech.cloud/videotube/api/public/api/shortsdislike", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.code === 200) {
+          setThumbDownClicked(newThumbDownState);
+          setDislikeCount(
+            newThumbDownState ? dislikeCount + 1 : dislikeCount - 1
+          );
+
+          if (thumbUpClicked) {
+            setThumbUpClicked(false);
+            setLikeCount(likeCount - 1);
+          }
+
+          console.log(data.message);
+        } else {
+          console.error("Error from dislike:", data.message);
+        }
+      })
+      .catch((error) => {
+        console.error("Error from dislike:", error);
+      });
   };
 
-  // Subscribe
-  const [subscribed, setSubscribed] = useState(false);
-  const handleSubscribeClick = () => {
-    setSubscribed(!subscribed);
-  };
-  const buttonStyle = {
-    backgroundColor: subscribed ? "rgba(0,0,0.3,0.6)" : "#ffffff",
-    color: subscribed ? "#ffffff" : "black",
+  //description
+
+  const [expanded, setExpanded] = useState(false);
+  const toggleDescription = () => {
+    setExpanded(!expanded);
   };
 
   //Comments toggle
-
   const [showOptions, setShowOptions] = useState(false);
   const toggleOptions = () => {
     setShowOptions(!showOptions);
   };
 
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
   return (
-    <div className="ShortCard">
+    <div className={`comment-container ${showOptions ? 'open' : ''}`}>
       <div className="shorts-container">
         <div className="shorts-video">
-          <video className="centered-video" src={video} poster={thumb}></video>
+          <video className="centered-video" src={video_url} controls loop />
           <div className="video-title">
             <div className="channel_details">
               <Avatar
                 className="videoCard_avatar"
-                alt={channel}
+                alt=""
                 src={channelImage}
                 sx={{ width: 30, height: 30 }}
               />
-              <p>{channel}</p>
-              <button
-                className="shorts_btn"
-                style={buttonStyle}
-                onClick={handleSubscribeClick}
-              >
-                {subscribed ? "Subscribed" : "Subscribe"}
-              </button>
+              <p className="title">{description}</p>
             </div>
+
             <div className="shorts_desc">
-              <p>{title}</p>
+              <div className="description">
+                <p>{title}</p>
+                <a onClick={toggleDescription}>Show less</a>
+              </div>
             </div>
           </div>
         </div>
@@ -96,8 +234,8 @@ function ShortCard({
             className="icon"
             onClick={handleThumbUpClick}
             style={{
-              backgroundColor: thumbUpClicked ? "black" : "lightgray",
-              color: thumbUpClicked ? "white" : "black",
+              backgroundColor: thumbUpClicked ? "white" : " rgba(0, 0, 0, 0.7)",
+              color: thumbUpClicked ? "black" : "white",
             }}
           >
             <ThumbUpIcon />
@@ -108,124 +246,21 @@ function ShortCard({
             className="icon"
             onClick={handleThumbDownClick}
             style={{
-              backgroundColor: thumbDownClicked ? "black" : "lightgray",
-              color: thumbDownClicked ? "white" : "black",
+              backgroundColor: thumbDownClicked
+                ? "white"
+                : " rgba(0, 0, 0, 0.7)",
+              color: thumbDownClicked ? "black" : "white",
             }}
           >
             <ThumbDownIcon />
           </div>
-          <p className="style_p">Dislike</p>
+          <p>{dislikeCount}</p>
 
+          {/* comments */}
           <div className="icon" onClick={toggleOptions}>
             <CommentSharpIcon />
-            {showOptions && (
-              <div className="short-comments">
-                <div className="comments-header">
-                  <h4>
-                    Comments <span>88</span>
-                  </h4>
-                  <CloseSharpIcon />
-                </div>
-                <div className="comment-info">
-                  <div className="cmd-img">
-                    <img
-                      src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg"
-                      alt=""
-                    />
-                  </div>
-                  <div className="cmd-details">
-                    <p>
-                      User_1<span> . 1 day ago</span>
-                    </p>
-                    <p className="cmd">This is cool</p>
-                    <div className="shortcmd-action">
-                      <ThumbUpIcon
-                        className="shortaction"
-                        sx={{ fontSize: "1rem" }}
-                      />
-                      <span>687</span>
-                      <ThumbDownIcon
-                        className="shortaction"
-                        sx={{ fontSize: "1rem" }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="comment-info">
-                  <div className="cmd-img">
-                    <img
-                      src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg"
-                      alt=""
-                    />
-                  </div>
-                  <div className="cmd-details">
-                    <p>
-                      User_1<span> . 1 day ago</span>
-                    </p>
-                    <p className="cmd">This is cool</p>
-                    <div className="shortcmd-action">
-                      <ThumbUpIcon
-                        className="shortaction"
-                        sx={{ fontSize: "1rem" }}
-                      />
-                      <span>687</span>
-                      <ThumbDownIcon
-                        className="shortaction"
-                        sx={{ fontSize: "1rem" }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="comment-info">
-                  <div className="cmd-img">
-                    <img
-                      src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg"
-                      alt=""
-                    />
-                  </div>
-                  <div className="cmd-details">
-                    <p>
-                      User_1<span> . 1 day ago</span>
-                    </p>
-                    <p className="cmd">This is superb</p>
-                    <div className="shortcmd-action">
-                      <ThumbUpIcon
-                        className="shortaction"
-                        sx={{ fontSize: "1rem" }}
-                      />
-                      <span>687</span>
-                      <ThumbDownIcon
-                        className="shortaction"
-                        sx={{ fontSize: "1rem" }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-
-                <div className="add-shortscomment" onClick={(event) => event.stopPropagation()}>
-                  <div className="shorts-cmd">
-                    <div>
-                      <img src='http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg' alt=' '/>
-                    </div>
-                    <div>
-                      <input type='text' placeholder="Add a commetn.." />
-                      <hr />
-                    </div>                  
-                  </div>
-                  <div className="shorts-btns">
-                    <button className="short-btn1">
-                      Cancel
-                    </button>
-                    <button className="short-btn2">
-                      Comment
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
-          <p>{comment}</p>
+          <p>{commentLength}</p>
 
           <div className="icon">
             <ReplySharpIcon />
@@ -236,6 +271,18 @@ function ShortCard({
             <MoreVertSharpIcon />
           </div>
         </div>
+      </div>
+      <div  className={`comment-container ${showOptions ? 'open' : ''}`}>
+        {showOptions && (
+          <ShortComment
+            token={token}
+            userId={userId}
+            shortId={id}
+            username={username}
+            count={count}
+            commentLength={commentLength}
+          />
+        )}
       </div>
     </div>
   );
