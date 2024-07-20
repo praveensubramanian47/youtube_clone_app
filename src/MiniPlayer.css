@@ -1,0 +1,88 @@
+.mini-player {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    width: 300px;
+    background: black;
+    color: white;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+  
+  .mini-video {
+    width: 100%;
+    height: auto;
+  }
+  
+  .center-controls {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+  }
+  
+  .center-controls button {
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 50%;
+  }
+  
+  .close-button {
+    position: absolute;
+    top: 5px;
+    left: 1px;
+    cursor: pointer;
+    z-index: 1;
+  }
+  
+  .close-button button {
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 50%;
+  }
+
+  .mini-seek-bar {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    width: 96%;
+    height: 3px;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    z-index: 1;
+    outline: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+  }
+  
+  .mini-seek-bar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 5px;
+    height: 5px;
+    background: blue;
+    border-radius: 50%;
+  }
+  
+  .mini-time {
+    margin: 5px;
+    font-size: 0.9rem;
+  }
+  

@@ -7,6 +7,17 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
+function getCookie(name) {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(";");
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === " ") c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+}
+
 function ShortComment({
   token,
   userId,
@@ -16,13 +27,20 @@ function ShortComment({
   shortId,
   username,
 }) {
-  const [comment, setComment] = useState([]);
+  const profile_image = getCookie("profile_img");
+
+  const [comments, setComments] = useState([]);
   const [likedShortCommentIds, setLikedShortCommentIds] = useState([]);
   const [dislikedShortCommentIds, setDislikedShortCommentIds] = useState([]);
+  const [likedReplyIds, setLikedReplyIds] = useState([]);
+  const [dislikedReplyIds, setDislikedReplyIds] = useState([]);
+  const [visibleReplies, setVisibleReplies] = useState({});
+  const [visibleReplyInputs, setVisibleReplyInputs] = useState({});
+  const [replyText, setReplyText] = useState({});
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Change the time format.
   function getRelativeTime(uploadTime) {
     return dayjs(uploadTime).fromNow();
   }
@@ -31,7 +49,7 @@ function ShortComment({
     const requestBody = {
       user_id: userId,
     };
-    const shortInfo = async (retryCount = 3) => {
+    const fetchShortInfo = async (retryCount = 3) => {
       try {
         const response = await fetch(
           "https://insightech.cloud/videotube/api/public/api/shortsfetch",
@@ -44,6 +62,7 @@ function ShortComment({
             body: JSON.stringify(requestBody),
           }
         );
+
         if (!response.ok) {
           const errorText = await response.text();
           const errorData = JSON.parse(errorText);
@@ -51,22 +70,32 @@ function ShortComment({
         }
 
         const result = await response.json();
-        setComment(result.data[count].comments);
+        setComments(result.data[count].comments);
 
-        // Set Short liked comments ids
-        const shortLikedCommentIdsArray = result.data[count].comments
+        const likedIds = result.data[count].comments
           .filter((comment) => comment.isLiked)
           .map((comment) => comment.id);
-        setLikedShortCommentIds(shortLikedCommentIdsArray);
+        setLikedShortCommentIds(likedIds);
 
-        // Set Short Disliked comments ids
-        const shortDislikedCommentIdsArray = result.data[count].comments
+        const dislikedIds = result.data[count].comments
           .filter((comment) => comment.isDisliked)
           .map((comment) => comment.id);
-        setDislikedShortCommentIds(shortDislikedCommentIdsArray);
+        setDislikedShortCommentIds(dislikedIds);
+
+        const likedReplyIdsArray = result.data[count].comments
+          .flatMaP((comment) => comment.replies)
+          .filter((reply) => reply.isLiked)
+          .map((reply) => reply.id);
+        setLikedReplyIds(likedReplyIdsArray);
+
+        const dislikedReplyIdsArray = result.data[count].comments
+          .flatMaP((comment) => comment.replies)
+          .filter((reply) => reply.isDisliked)
+          .map((reply) => reply.id);
+        setDislikedReplyIds(dislikedReplyIdsArray);
       } catch (error) {
         if (retryCount > 0) {
-          await shortInfo(retryCount - 1);
+          await fetchShortInfo(retryCount - 1);
         } else {
           setError(error.message);
         }
@@ -76,16 +105,22 @@ function ShortComment({
     };
 
     if (token) {
-      shortInfo();
+      fetchShortInfo();
     }
-  }, [token, userId]);
+  }, [token, userId, count]);
 
   useEffect(() => {
-    console.log("Liked ID's:-", likedShortCommentIds);
-    console.log("Disliked ID's:-", dislikedShortCommentIds);
-  }, [likedShortCommentIds, dislikedShortCommentIds]);
+    console.log("Liked Comment Ids:", likedShortCommentIds);
+    console.log("Disliked Comment Ids:", dislikedShortCommentIds);
+    console.log("Liked Reply Ids:", likedReplyIds);
+    console.log("Disliked Reply Ids:", dislikedReplyIds);
+  }, [
+    likedShortCommentIds,
+    dislikedShortCommentIds,
+    likedReplyIds,
+    dislikedReplyIds,
+  ]);
 
-  //Add new comments
   const handleShortAddComment = async () => {
     const inputElement = document.querySelector(".shorts-cmd input");
     const commentText = inputElement.value.trim();
@@ -95,11 +130,8 @@ function ShortComment({
         shorts_id: shortId,
         user_name: username,
         comment: commentText,
-        profile_image:
-          "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/WeAreGoingOnBullrun.jpg",
+        profile_image: profile_image,
       };
-
-      console.log(requestBody);
 
       try {
         const response = await fetch(
@@ -116,8 +148,6 @@ function ShortComment({
 
         if (response.ok) {
           const data = await response.json();
-          console.log("All data:-", data);
-          console.log("Comment Id:-",data.id);
           if (data.code === 200) {
             const newComment = {
               id: data.data.id,
@@ -127,32 +157,130 @@ function ShortComment({
               like: 0,
               dislike: 0,
               upload_time: data.data.upload_time,
+              replies: [], // Initialize replies array
             };
-            setComment([...comment, newComment]);
+            setComments([...comments, newComment]);
             inputElement.value = ""; // Clear the input field after adding the comment
           } else {
-            console.error("Error from comment else:", data.message);
+            console.error("Error:", data.message);
           }
         } else {
-          console.error("Error from comment catch:", await response.text());
+          console.error("Error:", await response.text());
         }
       } catch (error) {
-        console.error("Error from comment catch:", error);
+        console.error("Error:", error);
       }
     }
   };
 
-  //Comments like
-  const handleShortCommentThumbUp = async (comment, event) => {
-    event.stopPropagation(); // Prevent closing the tab
-    const isAlreadyLiked = likedShortCommentIds.includes(comment.id);
+  //Replies toggle
+  const toggleReplies = (commentId) => {
+    setVisibleReplies((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
+  };
+
+  //reply input
+  const handleShowReplyInput = (commentId) => {
+    setVisibleReplyInputs({
+      ...visibleReplyInputs,
+      [commentId]: true,
+    });
+  };
+
+  const handleReplyChange = (commentId, text) => {
+    setReplyText((prevReplyText) => ({
+      ...prevReplyText,
+      [commentId]: text,
+    }));
+  };
+
+  const handleAddReply = async (commentId) => {
+    const requestBody = {
+      shorts_id: shortId,
+      comment_id: commentId,
+      comment: replyText[commentId], // Using replyText state for the reply content
+      user_name: username,
+      profile_image: profile_image,
+    };
+
+    console.log("requestBody from reply:- ", requestBody);
+
+    if (replyText[commentId]?.trim() !== "") {
+      try {
+        const response = await fetch(
+          "https://insightech.cloud/videotube/api/public/api/shorts/comment/reply",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+
+          console.log("data from reply comment:- ", data);
+          if (data.code === 200) {
+            const newReply = {
+              id: data.id, // Assuming the response includes the new reply ID
+              comment: replyText[commentId],
+              user_name: username,
+              profile_image: profile_image,
+              like: 0,
+              dislike: 0,
+            };
+            setComments((prevComments) =>
+              prevComments.map((comment) =>
+                comment.id === commentId
+                  ? { ...comment, replies: [...comment.replies, newReply] }
+                  : comment
+              )
+            );
+            setReplyText((prevReplyText) => ({
+              ...prevReplyText,
+              [commentId]: "", // Clear reply input after successful submission
+            }));
+
+            setVisibleReplyInputs((prevVisibleReplyInputs) => ({
+              ...prevVisibleReplyInputs,
+              [commentId]: false, // Hide reply input after successful submission
+            }));
+
+            console.log("comments:-", comments);
+          } else {
+            console.error("Error from reply else:", data.message);
+          }
+        } else {
+          console.error("Error from reply catch:", await response.text());
+        }
+      } catch (error) {
+        console.error("Error from reply catch:", error);
+      }
+    }
+  };
+
+  const handleCancelReply = (commentId) => {
+    // setVisibleReplyInputs(false);
+    setReplyText((prevReplyText) => ({
+      ...prevReplyText,
+      [commentId]: "", // Clear reply input for specific comment
+    }));
+  };
+
+  const handleShortCommentThumbUp = async (comment, isReply = false) => {
+    const isAlreadyLiked = isReply
+      ? likedReplyIds.includes(comment.id)
+      : likedShortCommentIds.includes(comment.id);
     const requestBody = {
       comment_id: comment.id,
       user_id: userId,
       is_like: !isAlreadyLiked,
     };
-
-    console.log(requestBody);
 
     try {
       const response = await fetch(
@@ -166,47 +294,52 @@ function ShortComment({
           body: JSON.stringify(requestBody),
         }
       );
-      const result = await response.json();
-      if (result.code === 200) {
-        setComment((prevComments) =>
-          prevComments.map((c) =>
-            c.id === comment.id
-              ? {
-                  ...c,
-                  isLiked: !isAlreadyLiked,
-                  like: !isAlreadyLiked ? c.like + 1 : c.like - 1,
-                  isDisliked: false,
-                  dislike: c.isDisliked ? c.dislike - 1 : c.dislike,
-                }
-              : c
-          )
-        );
 
-        if (!isAlreadyLiked) {
-          setLikedShortCommentIds((prevIds) => [...prevIds, comment.id]);
-        } else {
-          setLikedShortCommentIds((prevIds) =>
-            prevIds.filter((id) => id !== comment.id)
-          );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.message === "Liked") {
+          if (isReply) {
+            setLikedReplyIds((prevLikedIds) => [...prevLikedIds, comment.id]);
+            setDislikedReplyIds((prevDislikedIds) =>
+              prevDislikedIds.filter((id) => id !== comment.id)
+            );
+          } else {
+            setLikedShortCommentIds((prevLikedIds) => [
+              ...prevLikedIds,
+              comment.id,
+            ]);
+            setDislikedShortCommentIds((prevDislikedIds) =>
+              prevDislikedIds.filter((id) => id !== comment.id)
+            );
+          }
+        } else if (data.message === "Unliked") {
+          if (isReply) {
+            setLikedReplyIds((prevLikedIds) =>
+              prevLikedIds.filter((id) => id !== comment.id)
+            );
+          } else {
+            setLikedShortCommentIds((prevLikedIds) =>
+              prevLikedIds.filter((id) => id !== comment.id)
+            );
+          }
         }
       } else {
-        console.error("Error from like:", result.message);
+        console.error("Error:", await response.text());
       }
     } catch (error) {
-      console.error("Error from like:", error);
+      console.error("Error:", error);
     }
   };
 
-  const handleShortCommentThumbDown = async (comment, event) => {
-    event.stopPropagation(); // Prevent closing the tab
-    const isAlreadyDisliked = dislikedShortCommentIds.includes(comment.id);
+  const handleShortCommentThumbDown = async (comment, isReply = false) => {
+    const isAlreadyDisliked = isReply
+      ? dislikedReplyIds.includes(comment.id)
+      : dislikedShortCommentIds.includes(comment.id);
     const requestBody = {
       comment_id: comment.id,
       user_id: userId,
       is_dislike: !isAlreadyDisliked,
     };
-
-    console.log(requestBody);
 
     try {
       const response = await fetch(
@@ -220,34 +353,43 @@ function ShortComment({
           body: JSON.stringify(requestBody),
         }
       );
-      const result = await response.json();
-      if (result.code === 200) {
-        setComment((prevComments) =>
-          prevComments.map((c) =>
-            c.id === comment.id
-              ? {
-                  ...c,
-                  isDisliked: !isAlreadyDisliked,
-                  dislike: !isAlreadyDisliked ? c.dislike + 1 : c.dislike - 1,
-                  isLiked: false,
-                  like: c.isLiked ? c.like - 1 : c.like,
-                }
-              : c
-          )
-        );
 
-        if (!isAlreadyDisliked) {
-          setDislikedShortCommentIds((prevIds) => [...prevIds, comment.id]);
-        } else {
-          setDislikedShortCommentIds((prevIds) =>
-            prevIds.filter((id) => id !== comment.id)
-          );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.message === "Disliked") {
+          if (isReply) {
+            setDislikedReplyIds((prevDislikedIds) => [
+              ...prevDislikedIds,
+              comment.id,
+            ]);
+            setLikedReplyIds((prevLikedIds) =>
+              prevLikedIds.filter((id) => id !== comment.id)
+            );
+          } else {
+            setDislikedShortCommentIds((prevDislikedIds) => [
+              ...prevDislikedIds,
+              comment.id,
+            ]);
+            setLikedShortCommentIds((prevLikedIds) =>
+              prevLikedIds.filter((id) => id !== comment.id)
+            );
+          }
+        } else if (data.message === "Undisliked") {
+          if (isReply) {
+            setDislikedReplyIds((prevDislikedIds) =>
+              prevDislikedIds.filter((id) => id !== comment.id)
+            );
+          } else {
+            setDislikedShortCommentIds((prevDislikedIds) =>
+              prevDislikedIds.filter((id) => id !== comment.id)
+            );
+          }
         }
       } else {
-        console.error("Error from dislike:", result.message);
+        console.error("Error:", await response.text());
       }
     } catch (error) {
-      console.error("Error from dislike:", error);
+      console.error("Error:", error);
     }
   };
 
@@ -258,10 +400,10 @@ function ShortComment({
           <h4>
             Comments <span>{commentLength}</span>
           </h4>
-          <CloseSharpIcon onClick={onClose} /> {/* Add onClick to close */}
+          <CloseSharpIcon onClick={onClose} />
         </div>
-        {comment.map((comment, index) => (
-          <div className="comment-info" key={index}>
+        {comments.map((comment) => (
+          <div className="comment-info" key={comment.id}>
             <div className="cmd-img">
               <img src={comment.profile_image} alt={comment.user_name} />
             </div>
@@ -273,7 +415,7 @@ function ShortComment({
               <p className="cmd">{comment.comment}</p>
               <div className="shortcmd-action">
                 <ThumbUpIcon
-                  onClick={(event) => handleShortCommentThumbUp(comment, event)}
+                  onClick={() => handleShortCommentThumbUp(comment)}
                   className="shortaction"
                   sx={{
                     fontSize: "1rem",
@@ -284,9 +426,7 @@ function ShortComment({
                 />
                 <span>{comment.like}</span>
                 <ThumbDownIcon
-                  onClick={(event) =>
-                    handleShortCommentThumbDown(comment, event)
-                  }
+                  onClick={() => handleShortCommentThumbDown(comment)}
                   className="shortaction"
                   sx={{
                     fontSize: "1rem",
@@ -296,7 +436,91 @@ function ShortComment({
                   }}
                 />
                 <span>{comment.dislike}</span>
+
+                <div
+                  className="cmd-reply-part"
+                  onClick={() => handleShowReplyInput(comment.id)}
+                >
+                  <p>Reply</p>
+                </div>
               </div>
+              {visibleReplyInputs[comment.id] && (
+                <div className="short-add-reply">
+                  <input
+                    id={`reply-input-${comment.id}`}
+                    type="text"
+                    placeholder="Add a public reply"
+                    value={replyText[comment.id] || ""}
+                    onChange={(e) =>
+                      handleReplyChange(comment.id, e.target.value)
+                    }
+                  />
+                  <hr />
+                  <div className="shorts-cmd-btns">
+                    <button
+                      className="shorts-cmd-btn1"
+                      onClick={() => handleCancelReply(comment.id)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="shorts-cmd-btn2"
+                      onClick={() => handleAddReply(comment.id)}
+                    >
+                      Reply
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div className="shorts-cmd-reply">
+                <p onClick={() => toggleReplies(comment.id)}>Replies</p>
+              </div>
+              {visibleReplies[comment.id] && (
+                <div className="shorts-replies-section">
+                  {comment.replies.map((reply) => (
+                    <div key={reply.id} className="replys">
+                      <div className="cmd-headers">
+                        <img src={reply.profile_image} alt={reply.user_name} />
+                        <div className="shorts-cmd-info">
+                          <p className="user-info">
+                            {reply.user_name}
+                            <span> . {getRelativeTime(reply.upload_time)}</span>
+                          </p>
+                          <p>{reply.comment}</p>
+                          <div className="comment-action">
+                            <ThumbUpIcon
+                              onClick={() =>
+                                handleShortCommentThumbUp(reply, true)
+                              }
+                              className="action"
+                              sx={{
+                                color: likedReplyIds.includes(reply.id)
+                                  ? "black"
+                                  : "gray",
+                                fontSize: "18px",
+                              }}
+                            />
+                            {reply.like}
+                            <ThumbDownIcon
+                              onClick={() =>
+                                handleShortCommentThumbDown(reply, true)
+                              }
+                              className="action"
+                              sx={{
+                                color: dislikedReplyIds.includes(reply.id)
+                                  ? "black"
+                                  : "gray",
+                                fontSize: "18px",
+                              }}
+                            />
+                            {reply.dislike}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -307,19 +531,18 @@ function ShortComment({
         >
           <div className="shorts-cmd">
             <div>
-              <img
-                src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg"
-                alt=" "
-              />
+              <img src={profile_image} alt={username} />
             </div>
-            <div>
+            <div className="shorts-cmd-input">
               <input type="text" placeholder="Add a comment.." />
               <hr />
             </div>
           </div>
           <div className="shorts-btns">
             <button className="short-btn1">Cancel</button>
-            <button className="short-btn2" onClick={handleShortAddComment}>Comment</button>
+            <button className="short-btn2" onClick={handleShortAddComment}>
+              Comment
+            </button>
           </div>
         </div>
       </div>

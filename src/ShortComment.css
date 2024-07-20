@@ -1,8 +1,9 @@
-.ShortComment{
+.ShortComment {
     margin: 0;
     margin-bottom: 20rem;
     margin-right: 20rem;
 }
+
 .short-comments {
     position: absolute;
     background-color: white;
@@ -30,8 +31,7 @@
 .comment-info {
     display: flex;
     align-items: flex-start;
-    margin-bottom: 16px;
-    margin-top: 1rem;
+    margin: 1rem 0 16px 0;
 }
 
 .cmd-img img {
@@ -76,11 +76,18 @@
 }
 
 .add-shortscomment {
+    margin-top: 1rem;
+    width: 100%;
+    max-width: 23.5rem;
     position: sticky;
+    bottom: 0;
+    background-color: white;
+    padding: 16px 0;
 }
 
 .shorts-cmd {
     display: flex;
+    align-items: center;
 }
 
 .shorts-cmd img {
@@ -90,22 +97,32 @@
     margin-right: 12px;
 }
 
+
+.shorts-cmd-input{
+    width: 100%;
+    max-width: 20rem;
+}
+
 .shorts-cmd input {
     margin-top: 10px;
     outline: none;
-    width: 330px;
+    width: 20rem;
     border: 0;
 }
 
-.shorts-cmd hr {
+/* .shorts-cmd hr {
     margin-top: 5px;
-    width: 330px;
-}
+    width: 100%;
+    max-width: 20rem;
+
+    border: none;
+    border-top: 1px solid #ddd;
+} */
 
 .shorts-btns {
     margin-top: 5px;
     display: flex;
-    justify-content: end;
+    justify-content: flex-end;
 }
 
 .shorts-btns button {
@@ -123,4 +140,94 @@
 .short-btn2 {
     background-color: blue;
     color: #fff;
+}
+
+.cmd-reply-part > p{
+    margin-left: 10px;
+    font-size: 13px;
+}
+
+.shorts-cmd-reply>p {
+    margin-top: 0.5rem;
+    width: 100%;
+    max-width: 3rem;
+    color: rgb(0, 110, 255);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cmd-headers {
+    display: flex;
+    margin-top: 0.5rem;
+}
+
+.cmd-headers img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-top: 7px;
+    margin-right: 1rem;
+}
+
+.shorts-cmd-info p {
+    font-size: 13px;
+    margin-top: 0.3rem;
+
+}
+
+.shorts-cmd-info .user-info{
+    margin-top: 0.5rem;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.comment-action{
+    margin-top: 0.5rem;
+    width: 100%;
+    max-width: 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.short-add-reply{
+    width: 100%;
+    max-width: 20rem;
+    margin-top: 0.5rem;
+}
+
+.short-add-reply p{
+    cursor: pointer;
+}
+
+.short-add-reply input {
+    outline: none;
+    border: none;
+}
+
+.shorts-cmd-btns{
+    margin-top: 0.5rem;
+    margin-left: 9rem;
+    width: 100%;
+    max-width: 11rem;
+}
+
+.shorts-cmd-btn1{
+    width: 5rem;
+    border: none;
+    height: 1.5rem;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.shorts-cmd-btn2{
+    width: 5rem;
+    height: 1.5rem;
+    margin-left: 10px;
+    color: #fff;
+    background-color: blue;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
 }

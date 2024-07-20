@@ -1,9 +1,14 @@
 .sidebar {
     flex: 0.2;
-    position: -webkit-sticky; /* For Safari */
+    position: relative;
     position: sticky;
-    top: 0;
-}   
+    top: 100px;
+}
+
+.sidebar > h6{
+    margin-left: 1.1rem;
+    margin-bottom: 0.5rem;
+}
 
 .sidebar > hr{
     height: 1px;

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import "./PlayVideo.css";
 import VideoComments from "./VideoComments";
+import MiniPlayer from "./MiniPlayer";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import ReplySharpIcon from "@mui/icons-material/ReplySharp";
@@ -15,9 +16,12 @@ import MoreHorizSharpIcon from "@mui/icons-material/MoreHorizSharp";
 import BrandingWatermarkSharpIcon from "@mui/icons-material/BrandingWatermarkSharp";
 import SlowMotionVideoSharpIcon from "@mui/icons-material/SlowMotionVideoSharp";
 import TuneSharpIcon from "@mui/icons-material/TuneSharp";
+import AssistantPhotoSharpIcon from "@mui/icons-material/AssistantPhotoSharp";
 import DownloadSharpIcon from "@mui/icons-material/DownloadSharp";
 import CloseSharpIcon from "@mui/icons-material/CloseSharp";
-import { useVideo } from "./VideoContext";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(relativeTime);
 
 function getCookie(name) {
   const nameEQ = name + "=";
@@ -30,346 +34,257 @@ function getCookie(name) {
   return null;
 }
 
-function PlayVideo() {
-  const { videoDetails } = useVideo();
+function PlayVideo({
+  id,
+  name,
+  video,
+  thumbnail,
+  video_duration,
+  channel_name,
+  channel_id,
+  channel_image,
+  video_view,
+  upload_time,
+  likes,
+  dislikes,
+  isSubscribed,
+  description,
+  subscribers,
+  isVideoLike,
+  isVideoDislike,
+  resolutions,
+}) {
+  // const { videoDetails } = useVideo();
   const token = getCookie("token");
   const userId = getCookie("user_id");
   const username = getCookie("user_name");
   const video_id = getCookie("video_id");
-  const durations = getCookie("duration");
+  const profile_image = getCookie("profile_img");
 
-  console.log("Video id",video_id);
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState();
 
-  //Mini player
-  const videoRef = useRef(null);
-  const seekBarRef = useRef(null);
-  const miniVideoRef = useRef(null);
-  const miniPlayerRef = useRef(null);
-  const miniPlayPauseRef = useRef(null);
-  const miniSeekBarRef = useRef(null);
-  const [isMainPlayerPlaying, setIsMainPlayerPlaying] = useState(false);
-  const [isMiniPlayerPlaying, setIsMiniPlayerPlaying] = useState(false);
-
-  //Seetings
+  //Main player
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [selectedResolution, setSelectedResolution] = useState("");
-  const [selectedQuality, setSelectedQuality] = useState();
-  const [availableQualities, setAvailableQualities] = useState([]);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentTime, setCurrentTime] = useState("0:00");
   const [duration, setDuration] = useState("0:00");
+  const [seekValue, setSeekValue] = useState(0);
+  const [selectedQuality, setSelectedQuality] = useState("");
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  //Mini player
   const [isMiniPlayer, setIsMiniPlayer] = useState(false);
 
   //Like and unlike
-  const [thumbUpClicked, setThumbUpClicked] = useState(false);
-  const [thumbDownClicked, setThumbDownClicked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [dislikeCount, setDislikeCount] = useState(0);
+  const [thumbUpClicked, setThumbUpClicked] = useState(isVideoLike);
+  const [thumbDownClicked, setThumbDownClicked] = useState(isVideoDislike);
+  const [likeCount, setLikeCount] = useState(likes);
+  const [dislikeCount, setDislikeCount] = useState(dislikes);
+
+  //description
+  const [expanded, setExpanded] = useState(false);
+
+  // Report options
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [reasons, setReasons] = useState([]);
+  const [selectedReason, setSelectedReason] = useState("");
+  const [successmsg, setSuccessmsg] = useState();
 
   //Subscribe
-  const [subscribed, setSubscribed] = useState(false);
+  const [subscribed, setSubscribed] = useState(isSubscribed);
 
-  // const videoId = `?video_id=${videoDetails.id}`;
-
-  // console.log("ID",videoDetails.id);
+  const videoRef = useRef(null);
 
   useEffect(() => {
-    console.log(token);
-    const videoInfo = async (retryCount = 3) => {
-      try {
-        const response = await fetch(
-          `https://insightech.cloud/videotube/api/public/api/videoplay?video_id=${video_id}&user_id=${userId}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`, // Include the bearer token here
-            },
-          }
-        );
-        if (!response.ok) {
-          const errorText = await response.text(); // Get response text for more details
-          throw new Error(errorText || "Network response was not ok");
-        }
-        const result = await response.json();
-        setSelectedResolution(result.video.video_url); // Default resolution
-        // Set available qualities
-        if (result.video && result.video.resolutions) {
-          const qualities = result.video.resolutions.map(
-            (res) => res.resolution
-          );
-          setAvailableQualities(qualities);
-        }
-        setData(result);
-      } catch (error) {
-        if (retryCount > 0) {
-          await videoInfo(retryCount - 1);
-        } else {
-          setError(error.message);
-        }
-      } finally {
-        setLoading(false);
+    const handleClickOutside = (event) => {
+      if (event.target.closest(".show_options") === null) {
+        setShowOptions(false);
       }
     };
 
-    if (token) {
-      videoInfo();
-    }
-  }, [token, video_id]);
-
-  // Video player setup
-  useEffect(() => {
-    const video = document.getElementById("my-video");
-    const seekBar = document.getElementById("seek-bar");
-
-    videoRef.current = video;
-    seekBarRef.current = seekBar;
-
-    if (video && seekBar) {
-      const handlePlayPause = () => {
-        if (videoRef.current) {
-          if (videoRef.current.paused) {
-            videoRef.current.play().then(() => {
-              setIsPlaying(true);
-            }).catch(error => {
-              console.error('Error playing video:', error);
-            });
-          } else {
-            videoRef.current.pause();
-            setIsPlaying(false);
-          }
-        }
-      };
-
-      const handleMuteUnmute = () => {
-        video.muted = !video.muted;
-        setIsMuted(video.muted);
-      };
-
-      const handleFullScreen = () => {
-        if (!document.fullscreenElement) {
-          video.requestFullscreen();
-          setIsFullscreen(true);
-        } else {
-          document.exitFullscreen();
-          setIsFullscreen(false);
-        }
-      };
-
-      const handleSeekBarInput = () => {
-        const duration = video.duration;
-        const newTime = (seekBar.value / 100) * duration;
-        video.currentTime = newTime;
-      };
-
-      const formatTime = (seconds) => {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = Math.floor(seconds % 60);
-        return `${minutes}:${
-          remainingSeconds < 10 ? "0" : ""
-        }${remainingSeconds}`;
-      };
-
-      const updateSeekBar = () => {
-        const duration = video.duration;
-        if (duration) {
-          const value = (video.currentTime / duration) * 100;
-          seekBar.value = value;
-          seekBar.style.background = `linear-gradient(to right, red ${value}%, #444 ${value}%)`;
-          setCurrentTime(formatTime(video.currentTime));
-          setDuration(formatTime(duration));
-        }
-      };
-
-      const handleLoadedMetadata = () => {
-        updateSeekBar();
-      };
-
-      video.addEventListener("timeupdate", updateSeekBar);
-      video.addEventListener("loadedmetadata", handleLoadedMetadata);
-      document
-        .getElementById("play-pause")
-        .addEventListener("click", handlePlayPause);
-      document
-        .getElementById("mute-unmute")
-        .addEventListener("click", handleMuteUnmute);
-      document
-        .getElementById("full-screen")
-        .addEventListener("click", handleFullScreen);
-      seekBar.addEventListener("input", handleSeekBarInput);
-
-      return () => {
-        video.removeEventListener("timeupdate", updateSeekBar);
-        video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-        document
-          .getElementById("play-pause")
-          .removeEventListener("click", handlePlayPause);
-        document
-          .getElementById("mute-unmute")
-          .removeEventListener("click", handleMuteUnmute);
-        document
-          .getElementById("full-screen")
-          .removeEventListener("click", handleFullScreen);
-        seekBar.removeEventListener("input", handleSeekBarInput);
-      };
-    }
-  }, [data, videoDetails.duration]);
-
-  const toggleMiniPlayer = () => {
-    const mainVideo = document.getElementById("my-video");
-
-    if (!isMiniPlayer && miniVideoRef.current && mainVideo) {
-      miniVideoRef.current.currentTime = mainVideo.currentTime;
-      mainVideo.pause();
-      miniVideoRef.current.play();
-    } else if (isMiniPlayer && miniVideoRef.current && mainVideo) {
-      mainVideo.currentTime = miniVideoRef.current.currentTime;
-      miniVideoRef.current.pause();
-      mainVideo.play();
-    }
-
-    setIsMiniPlayer(!isMiniPlayer);
-  };
-
-  const handleMainPlayerPlayPause = () => {
-    const mainVideo = document.getElementById("my-video");
-    const miniVideo = miniVideoRef.current;
-
-    if (mainVideo.paused) {
-      mainVideo.play();
-      setIsMainPlayerPlaying(true);
-
-      if (!miniVideo.paused) {
-        miniVideo.pause();
-        setIsMiniPlayerPlaying(false);
-      }
+    if (showOptions) {
+      document.addEventListener("click", handleClickOutside);
     } else {
-      mainVideo.pause();
-      setIsMainPlayerPlaying(false);
+      document.removeEventListener("click", handleClickOutside);
     }
-  };
 
-  const handleMiniPlayerPlayPause = () => {
-    const miniVideo = miniVideoRef.current;
-    const mainVideo = document.getElementById("my-video");
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
 
-    if (miniVideo.paused) {
-      miniVideo.play();
-      setIsMiniPlayerPlaying(true);
-
-      if (!mainVideo.paused) {
-        mainVideo.pause();
-        setIsMainPlayerPlaying(false);
-      }
+  function formatViewCount(viewCount) {
+    if (viewCount >= 1000000) {
+      return `${(viewCount / 1000000).toFixed(1)}M`;
+    } else if (viewCount >= 1000) {
+      return `${(viewCount / 1000).toFixed(1)}K`;
     } else {
-      miniVideo.pause();
-      setIsMiniPlayerPlaying(false);
+      return viewCount.toString();
     }
-  };
+  }
 
-  //Like and dislike
-  useEffect(() => {
-    if (data && data.video) {
-      setLikeCount(data.video.likes ?? 0);
-      setDislikeCount(data.video.dislikes ?? 0);
-    }
-  }, [data]);
+  function getRelativeTime(uploadTime) {
+    return dayjs(uploadTime).fromNow();
+  }
 
-  const togglePlayPause = () => {
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play().then(() => {
-          setIsPlaying(true);
-        }).catch(error => {
-          console.error('Error playing video:', error);
-        });
-      } else {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      }
-    }
-  };
-
-  //Settings
   const toggleSettings = () => {
     setIsSettingsOpen(!isSettingsOpen);
   };
 
-  //play by speed
-  const handleSpeedChange = (event) => {
-    const speed = event.target.value;
-    setPlaybackSpeed(speed);
-    videoRef.current.playbackRate = speed;
+  //Vide play and pass
+  const handlePlayPauseClick = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.playbackRate = playbackSpeed; // Set playback rate
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  // Video mute and unmute
+  const handleMuteUnmuteClick = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  // Handle time update and seek bar
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      const current = videoRef.current.currentTime;
+      const duration = videoRef.current.duration;
+      setCurrentTime(formatTime(current));
+      setSeekValue((current / duration) * 100);
+    }
+  };
+
+  const handleSeekChange = (event) => {
+    if (videoRef.current) {
+      const newTime = (event.target.value / 100) * videoRef.current.duration;
+      videoRef.current.currentTime = newTime;
+      setSeekValue(event.target.value);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.src = selectedResolution;
-      videoRef.current.play();
+      setDuration(formatTime(videoRef.current.duration));
     }
-  }, [selectedResolution]);
+  }, [videoRef.current?.duration]);
 
-  //PLlay by quality
-  const handleResolutionChange = (e) => {
-    setSelectedResolution(e.target.value);
+  // Quality Selector Logic
+  const handleQualityChange = (event) => {
+    const newQuality = event.target.value;
+    setSelectedQuality(newQuality);
+
+    if (videoRef.current) {
+      const wasPlaying = !videoRef.current.paused; // Check if the video was playing
+
+      const handleLoadedData = () => {
+        if (wasPlaying) {
+          videoRef.current.play();
+          setIsPlaying(true);
+        }
+        videoRef.current.removeEventListener("loadeddata", handleLoadedData); // Clean up the event listener
+      };
+
+      // Pause the video, change the source, and then wait for the video to load
+      videoRef.current.pause();
+      videoRef.current.src = newQuality || video;
+      videoRef.current.load(); // Load the new video source
+      videoRef.current.addEventListener("loadeddata", handleLoadedData);
+    }
   };
 
-  //Download
-  const handleDownload = () => {
-    const videoUrl = data.video.video_url; // Use the actual URL from your data
+  // Video download function
+  const handleDownloadClick = () => {
+    const downloadUrl = selectedQuality || video;
     const link = document.createElement("a");
-    link.href = videoUrl;
-    link.download = `${data.video.name}.mp4`; // Give a default name to the downloaded file
+    link.href = downloadUrl;
+    link.download = `${name}.mp4`; // Set a default file name, adjust as needed
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setIsDownloading(false); // Update state to indicate download is complete or not
   };
 
-  // Function to fetch info
-  const videoAllInfo = async (retryCount = 2) => {
-    try {
-      const response = await fetch(
-        `https://insightech.cloud/videotube/api/public/api/videoplay?video_id=${video_id}&user_id=${userId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log(response);
-        throw new Error(errorText || "Network response was not ok");
-      }
-      const result = await response.json();
-      setSubscribed(result.video.isSubscribed);
-      setThumbUpClicked(result.video.isVideoLike);
-      setThumbDownClicked(result.video.isVideoDislike);
-    } catch (error) {
-      if (retryCount > 0) {
-        await videoAllInfo(retryCount - 1);
+  //Video full screen
+  const handleFullScreen = () => {
+    const videoElement = videoRef.current;
+
+    if (videoElement) {
+      if (!document.fullscreenElement) {
+        videoElement
+          .requestFullscreen()
+          .then(() => {
+            setIsFullscreen(true);
+          })
+          .catch((err) => {
+            console.error("Error entering fullscreen mode:", err);
+          });
       } else {
-        setError(error.message);
+        document
+          .exitFullscreen()
+          .then(() => {
+            setIsFullscreen(false);
+          })
+          .catch((err) => {
+            console.error("Error exiting fullscreen mode:", err);
+          });
       }
-    } finally {
-      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (token) {
-      setLoading(true);
-      videoAllInfo();
+  // Mini Player
+  const handleMiniPlayerToggle = () => {
+    setIsMiniPlayer(!isMiniPlayer);
+    if (isPlaying) {
+      videoRef.current.pause();
+      setIsPlaying(!isPlaying);
     }
-  }, [token, video_id, userId]);
+
+    console.log("Current duration:- ", videoRef.current.duration);
+  };
+
+  const handleMiniPlayerClose = () => {
+    setIsMiniPlayer(false);
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+    setIsPlaying(false);
+  };
+
+  //Video share
+
+  const handleShareClick = () => {
+    const videoUrl = window.location.href;
+
+    if (navigator.share) {
+      navigator
+        .share({
+          title: name,
+          text: "Check out this video!",
+          url: videoUrl,
+        })
+        .then(() => console.log("Successfully shared"))
+        .catch((error) => console.error("Error sharing", error));
+    }
+  };
 
   //Like
 
@@ -468,7 +383,7 @@ function PlayVideo() {
 
     const requestBody = {
       user_id: userId,
-      channel_id: data.video.channel_id,
+      channel_id: channel_id,
       is_subscribed: newSubscribedState,
     };
 
@@ -503,98 +418,192 @@ function PlayVideo() {
   };
 
   //description
-
-  const [expanded, setExpanded] = useState(false);
   const toggleDescription = () => {
     setExpanded(!expanded);
   };
 
-  //Share
-  const handleShareClick = () => {
-    if (navigator.share) {
-      navigator
-        .share({
-          title: videoDetails.title,
-          text: `Check out this video: ${videoDetails.title}`,
-          url: `http://localhost:3000/video/${videoDetails.videoUrl}`,
-        })
-        .then(() => {
-          console.log("share successfully");
-        })
-        .catch((error) => {
-          console.error("Error sharing:", error);
-        });
-    } else {
-      console.log("Web Share API not supported");
-    }
+  // Report video
+  const handleReportClick = () => {
+    setIsReportOpen(!isReportOpen);
+
+    fetch("https://insightech.cloud/videotube/api/public/api/report-reasons", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.code === 200) {
+          setReasons(data.reasons);
+        } else {
+          console.error("Error by showing report:", data.message);
+        }
+      })
+      .catch((error) => {
+        console.error("Error by showing report:", error);
+      });
   };
 
-  if (loading) return <div>Loading...</div>;
+  const handleShowOptions = () => {
+    setShowOptions(!showOptions);
+  };
+
+  const handleRadioChange = (event) => {
+    setSelectedReason(event.target.value);
+    console.log("Value:-", event.target.value);
+  };
+
+  const handleReportSubmit = () => {
+    const requestBody = {
+      user_id: userId,
+      video_id: id,
+      reason: selectedReason,
+    };
+
+    console.log("request Body:-", requestBody);
+
+    fetch("https://insightech.cloud/videotube/api/public/api/report", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.status === 200) {
+          console.log(data.message);
+          setSuccessmsg(data.message);
+        } else {
+          console.error("Error by submit report:", data.message);
+        }
+      })
+      .catch((error) => {
+        console.error("Error by submit report:", error);
+      });
+  };
+
   if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="play-video">
       <div className="video-container">
-        {data && data.video && (
-          <video
-            ref={videoRef}
-            width="100%"
-            onError={(e) => console.error("Video error:", e)}
-          >
-            <source src={selectedResolution} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+        <video
+          id="my-video"
+          className="main-video"
+          width="100%"
+          ref={videoRef}
+          poster={thumbnail}
+          src={selectedQuality || video}
+          type="video/mp4"
+          onError={(e) => console.error("Video error:", e)}
+          onTimeUpdate={handleTimeUpdate}
+          playbackRate={playbackSpeed}
+        ></video>
+
+        {showOptions && (
+          <div className="show_options">
+            <h6>Report video</h6>
+            {reasons.map((reason, index) => (
+              <div className="options" key={index}>
+                <input
+                  type="radio"
+                  id={`reason${index}`}
+                  value={reason}
+                  name="reportReason"
+                  checked={selectedReason === reason}
+                  onChange={handleRadioChange}
+                />
+                <label htmlFor={`reason${index}`}>{reason}</label>
+              </div>
+            ))}
+            {successmsg && <p className="report_success_msg">{successmsg}</p>}
+
+            <div className="report_btn">
+              <button className="cancel" onClick={() => setSelectedReason("")}>
+                Cancel
+              </button>
+              <button className="submit" onClick={handleReportSubmit}>
+                Submit
+              </button>
+            </div>
+          </div>
         )}
+
         <div className="controls">
           <input
             type="range"
             id="seek-bar"
-            ref={seekBarRef}
             min="0"
             max="100"
+            value={seekValue}
+            onChange={handleSeekChange}
+            style={{
+              background: `linear-gradient(to right, red ${
+                playbackSpeed * 100
+              }%, #444 ${playbackSpeed * 100}%)`,
+            }}
           />
           <div className="controls-parts">
             <div className="part-1">
-              <button id="play-pause" onClick={handleMainPlayerPlayPause}>
+              <button id="play-pause" onClick={handlePlayPauseClick}>
                 {isPlaying ? <PauseSharpIcon /> : <PlayArrowSharpIcon />}
               </button>
-              <button id="mute-unmute">
+              <button id="mute-unmute" onClick={handleMuteUnmuteClick}>
                 {isMuted ? <VolumeMuteSharpIcon /> : <VolumeUpSharpIcon />}
               </button>
-              <p>
-                {currentTime} / {duration}
-              </p>
+              {currentTime} / {duration}
             </div>
             <div className="part-2">
               <button id="settings" onClick={toggleSettings}>
                 <SettingsSharpIcon />
               </button>
-              <button id="mini-player" onClick={toggleMiniPlayer}>
+              <button id="mini-player" onClick={handleMiniPlayerToggle}>
                 <BrandingWatermarkSharpIcon />
               </button>
-              <button id="full-screen">
+              <button id="full-screen" onClick={handleFullScreen}>
                 {isFullscreen ? (
-                  <FullscreenExitSharpIcon sx={{ fontSize: "27px" }} />
-                ) : (
                   <FullscreenSharpIcon sx={{ fontSize: "27px" }} />
+                ) : (
+                  <FullscreenExitSharpIcon sx={{ fontSize: "27px" }} />
                 )}
               </button>
             </div>
           </div>
+          {isMiniPlayer && (
+            <MiniPlayer
+              mainPlayerRef={videoRef}
+              videoSrc={selectedQuality || video}
+              thumbnail={thumbnail}
+              onClose={handleMiniPlayerClose}
+              mainCurrentTime={videoRef.current.currentTime}
+            />
+          )}
           {isSettingsOpen && (
             <div className="settings-menu">
               <div className="settings-item">
                 <div className="play_fun">
                   <SlowMotionVideoSharpIcon />
-                  <label htmlFor="speed"> Speed:</label>
+                  <label htmlFor="playback-speed"> Speed:</label>
                 </div>
                 <select
-                  id="speed"
                   value={playbackSpeed}
-                  onChange={handleSpeedChange}
+                  onChange={(e) => {
+                    setPlaybackSpeed(parseFloat(e.target.value));
+                    if (videoRef.current) {
+                      videoRef.current.playbackRate = parseFloat(
+                        e.target.value
+                      );
+                    }
+                  }}
                 >
                   <option value="0.5">0.5x</option>
+                  <option value="0.75">0.75x</option>
                   <option value="1">1x</option>
+                  <option value="1.25">1.25x</option>
                   <option value="1.5">1.5x</option>
                   <option value="2">2x</option>
                 </select>
@@ -604,14 +613,14 @@ function PlayVideo() {
                   <TuneSharpIcon />
                   <label htmlFor="quality">Quality:</label>
                 </div>
-                <select
-                  id="resolution"
-                  value={selectedResolution}
-                  onChange={handleResolutionChange}
-                >
-                  {data.video.resolutions.map((res) => (
-                    <option key={res.id} value={res.resolution_url}>
-                      {res.resolution}
+                <select value={selectedQuality} onChange={handleQualityChange}>
+                  <option value="">Auto</option>
+                  {resolutions.map((resolution) => (
+                    <option
+                      key={resolution.id}
+                      value={resolution.resolution_url}
+                    >
+                      {resolution.resolution}
                     </option>
                   ))}
                 </select>
@@ -619,57 +628,23 @@ function PlayVideo() {
               <div className="settings-item">
                 <div className="play_fun">
                   <DownloadSharpIcon />
-                  <button onClick={handleDownload}>Download</button>
+                  <button
+                    onClick={handleDownloadClick}
+                    disabled={isDownloading}
+                  >
+                    Download
+                  </button>
                 </div>
               </div>
             </div>
           )}
         </div>
       </div>
-      {isMiniPlayer && (
-        <div className="mini-player" ref={miniPlayerRef}>
-          <div
-            className="mini-video-container"
-            id="mini-player"
-            ref={miniPlayerRef}
-          >
-            <video id="mini-video" ref={miniVideoRef}>
-              <source src={data.video.video_url} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-            <div className="mini-player-controls">
-              <div className="close">
-                <button id="mini-close" onClick={toggleMiniPlayer}>
-                  <CloseSharpIcon />
-                </button>
-              </div>
-              <div className="play-pass">
-                <button
-                  id="mini-play-pause"
-                  ref={miniPlayPauseRef}
-                  onClick={handleMiniPlayerPlayPause}
-                >
-                  {isPlaying ? <PauseSharpIcon /> : <PlayArrowSharpIcon />}
-                </button>
-              </div>
-              <div className="mini-seek-bar-container">
-                <input
-                  type="range"
-                  id="mini-seek-bar"
-                  defaultValue="0"
-                  ref={miniSeekBarRef}
-                  min="0"
-                  max="100"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      {data && data.video && <h3>{data.video.name}</h3>}
+      <h3>{name}</h3>
       <div className="play-video-info">
         <p>
-          {videoDetails.video_view} Views &bull; {videoDetails.upload_time}
+          {formatViewCount(video_view)} Views &bull;{" "}
+          {getRelativeTime(upload_time)}
         </p>
         <div>
           <span>
@@ -692,52 +667,59 @@ function PlayVideo() {
             <ReplySharpIcon className="img" onClick={handleShareClick} />
           </span>
           <span>
-            <MoreHorizSharpIcon className="img" />
+            <MoreHorizSharpIcon className="img" onClick={handleReportClick} />
           </span>
         </div>
+        {isReportOpen && (
+          <div
+            className="report_options"
+            style={{ cursor: "pointer" }}
+            onClick={handleShowOptions}
+          >
+            <AssistantPhotoSharpIcon />
+            <span>Report</span>
+          </div>
+        )}
       </div>
       <hr />
-      {data && data.video && (
-        <div className="publisher">
-          <img src={data.video.channel_image} alt={data.video.channel_name} />
-          <div>
-            <p>{data.video.channel_name}</p>
-            <span>{data.video.number_of_channel_subscribers} Subscribers</span>
-          </div>
-          <button style={buttonStyle} onClick={handleSubscribeClick}>
-            {subscribed ? "Subscribed" : "Subscribe"}
-          </button>
+      <div className="publisher">
+        <img src={channel_image} alt={channel_name}/>
+        <div>
+          <p>{channel_name}</p>
+          <span>{subscribers} Subscribers</span>
         </div>
-      )}
+        <button style={buttonStyle} onClick={handleSubscribeClick}>
+          {subscribed ? "Subscribed" : "Subscribe"}
+        </button>
+      </div>
       <div className="vid-description">
-        {data && data.video && (
-          <div className="description">
-            {expanded ? (
-              <div>
-                <p>{data.video.description}</p>
-                <a onClick={toggleDescription}>Show less</a>
-              </div>
-            ) : (
-              <div>
-                <p style={{ fontSize: "1rem" }}>
-                  {data.video.description.substring(0, 200)}
-                </p>
-                {data.video.description.length > 200 && (
-                  <a onClick={toggleDescription}>..more</a>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        <div className="description">
+          {expanded ? (
+            <div>
+              <p>{description}</p>
+              <a onClick={toggleDescription}>Show less</a>
+            </div>
+          ) : (
+            <div>
+              <p style={{ fontSize: "1rem" }}>
+                {description.substring(0, 200)}
+              </p>
+              {description.length > 200 && (
+                <a onClick={toggleDescription}>..more</a>
+              )}
+            </div>
+          )}
+        </div>
+
         <hr />
-        {data && data.video && (
-          <VideoComments
-            token={token}
-            userId={userId}
-            videoId={data.video.id}
-            username={username}
-          />
-        )}
+
+        <VideoComments
+          token={token}
+          userId={userId}
+          videoId={video_id}
+          username={username}
+          profile_image={profile_image}
+        />
       </div>
     </div>
   );

@@ -4,7 +4,6 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import PlaylistAddSharpIcon from "@mui/icons-material/PlaylistAddSharp";
 import PlaylistPlaySharpIcon from "@mui/icons-material/PlaylistPlaySharp";
 import { useNavigate } from "react-router-dom";
-import { useVideo } from "./VideoContext";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
@@ -46,7 +45,6 @@ function VideoCard({
   const userId = getCookie("user_id");
   const username = getCookie("user_name");
   const navigate = useNavigate();
-  const { setVideoDetails } = useVideo();
 
   const [showOptions, setShowOptions] = useState(false);
   const [showOptionCreate, setShowOptionCreate] = useState(false);
@@ -69,14 +67,6 @@ function VideoCard({
 
   const handleVideoClick = () => {
     setCookie("video_id", id, 1);
-    setCookie("duration", duration);
-    setVideoDetails({
-      id,
-      videoUrl: encodeURIComponent(video),
-      upload_time: getRelativeTime(upload_time),
-      video_view: formatViewCount(video_view),
-      duration,
-    });
     navigate(`/video/${encodeURIComponent(video)}`);
   };
 
@@ -86,6 +76,7 @@ function VideoCard({
 
   const toggleOptionsCreate = () => {
     setShowOptionCreate(!showOptionCreate);
+    // setShowOptions(!showOptions);
   };
 
   const togglePlaylists = () => {
@@ -173,7 +164,7 @@ function VideoCard({
         }
         const result = await response.json();
         setAvailablePlaylists(result.playlist);
-        console.log("Result:-", result.playlist);
+        console.log("Result:-", result.message);
       } catch (error) {
         if (retryCount > 0) {
           await playlistInfo(retryCount - 1);
@@ -230,16 +221,18 @@ function VideoCard({
         <div className="videoCard_duration">{duration}</div>
       </div>
       <div className="videocard_info">
-        <div className="videoCard_avatar">
-          <img className="" src={channelImage} alt={channel} />
-        </div>
-
-        <div className="videoCard_text">
-          <h4>{title.length > 25 ? `${title.slice(0, 25)}...` : title}</h4>
-          <p>{channel}</p>
-          <p>
-            {formatViewCount(video_view)} views . {getRelativeTime(upload_time)}
-          </p>
+        <div className="video_text_details">
+          <div className="videoCard_avatar">
+            <img className="" src={channelImage} alt={channel} />
+          </div>
+          <div className="videoCard_text">
+            <h4>{title.length > 25 ? `${title.slice(0, 25)}...` : title}</h4>
+            <span>{channel}</span>
+            <span>
+              {formatViewCount(video_view)} views .{" "}
+              {getRelativeTime(upload_time)}
+            </span>
+          </div>
         </div>
 
         <div className="video_feature">
@@ -264,7 +257,10 @@ function VideoCard({
                           type="checkbox"
                           id={`playlist-${playlist.Id}`}
                           onChange={() =>
-                            handlePlaylistToggle(playlist.Id, playlist.playlist_name)
+                            handlePlaylistToggle(
+                              playlist.Id,
+                              playlist.playlist_name
+                            )
                           }
                         />
                         <label htmlFor={`playlist-${playlist.Id}`}>
@@ -280,12 +276,16 @@ function VideoCard({
             {showOptionCreate && (
               <div className="playlist_functions">
                 <form onSubmit={handlePlaylistCreate}>
-                  <input
-                    type="text"
-                    placeholder="Enter the playlist name"
-                    className="playlist-name-input"
-                  />
-                  <button type="submit">Create</button>
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Enter the playlist name"
+                      className="playlist-name-input"
+                    />
+                  </div>
+                  <div>
+                    <button type="submit">Create</button>
+                  </div>
                 </form>
               </div>
             )}

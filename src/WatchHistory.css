@@ -1,0 +1,192 @@
+.WatchHistory {
+  flex: 0.9;
+  padding: 20px;
+  padding-bottom: 0;
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+}
+
+.main-content {
+  flex: 1.5;
+}
+
+.right-side-options {
+  flex: 0.8;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 20px;
+  position: sticky;
+  top: 100px;
+  margin-left: 20px;
+}
+
+.search-watch-history {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+.search-watch-history>input {
+  width: 85%;
+  padding: 10px;
+  padding-right: 10px;
+  border: none;
+  outline: none;
+  border-bottom: 1px solid lightgray;
+}
+
+.history-options {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.history-options button,
+.manage-options button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: left;
+  background-color: none;
+}
+
+.history-options button svg,
+.manage-options button svg {
+  margin-right: 10px;
+}
+
+.manage-options {
+  display: flex;
+  flex-direction: column;
+}
+
+.watch_shorts {
+  display: flex;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.main-content .day {
+  margin-top: 0.5rem;
+}
+
+.shorts_row {
+  margin-top: 0.5rem;
+  margin-right: 10px;
+  flex: 0 0 auto;
+  margin-bottom: 2rem;
+}
+
+.video_row {
+  margin-top: 0.5rem;
+}
+
+.scrollButton {
+  cursor: pointer;
+}
+
+.shorts_section {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+}
+
+.shorts_section::-webkit-scrollbar {
+  display: none;
+}
+
+.watch_history_container hr {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Media queries for responsive design */
+@media (max-width: 768px) {
+  .WatchHistory {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .main-content {
+    flex: 1;
+    width: 100%;
+  }
+
+  .right-side-options {
+    flex: 1;
+    width: 100%;
+    padding: 10px;
+    margin-left: 0;
+    position: static;
+  }
+
+  .search-watch-history {
+    width: 100%;
+  }
+
+  .history-options button,
+  .manage-options button {
+    width: 100%;
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+
+  .shorts_controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .scrollButton {
+    margin: 5px 0;
+  }
+
+  .shorts_section {
+    width: 100%;
+  }
+
+  .short {
+    flex: 1 1 100%;
+    margin-bottom: 10px;
+  }
+
+  .video_row {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .video_row>div {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .WatchHistory {
+    padding: 10px;
+  }
+
+  .search-watch-history>input {
+    padding: 5px;
+  }
+
+  .history-options button,
+  .manage-options button {
+    padding: 6px;
+    font-size: 0.8rem;
+  }
+
+  .watch_shorts h5,
+  .main-content .day {
+    font-size: 1rem;
+  }
+}

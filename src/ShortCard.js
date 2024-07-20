@@ -24,44 +24,47 @@ function ShortCard({
   description,
   video_url,
   title,
+  thumb,
   channelImage,
   like,
   dislike,
+  isLiked,
+  isDisLiked,
+  commentLen,
   count,
 }) {
   const token = getCookie("token");
   const userId = getCookie("user_id");
   const username = getCookie("user_name");
 
-  const [showComment, setShowComment] = useState(false);
-
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState();
   const [error, setError] = useState(null);
   // Like and unlike
   const [thumbUpClicked, setThumbUpClicked] = useState(false);
   const [thumbDownClicked, setThumbDownClicked] = useState(false);
-  const [likeCount, setLikeCount] = useState(parseInt(like) || 0);
-  const [dislikeCount, setDislikeCount] = useState(parseInt(dislike) || 0);
+  const [likeCount, setLikeCount] = useState(0);
+  const [dislikeCount, setDislikeCount] = useState(0);
 
-  //Comment length
-  const [commentLength, setCommentLength] = useState(0);
 
-  const toggleComment = () => {
-    setShowComment(!showComment);
-  };
+  useEffect(() => {
+    setThumbDownClicked(isDisLiked);
+    setThumbUpClicked(isLiked);
+    setLikeCount(like);
+    setDislikeCount(dislike);
+  }, [token, id]);
 
-  //Fetch shorts info for that particular user.
-  const shortAllInfo = async (retryCount = 2) => {
+
+  //Store the short for play list.
+  const shortIdInfo = async (retryCount = 2) => {
     const requestBody = {
-      user_id: userId,
-      short_id: id,
+      shorts_id: id,
+      is_short_add: true,
+      user_id: parseInt(userId, 10)
     };
-
-    console.log(userId, id);
 
     try {
       const response = await fetch(
-        "https://insightech.cloud/videotube/api/public/api/shortsfetch",
+        "https://insightech.cloud/videotube/api/public/api/fetch-shorts-details",
         {
           method: "POST",
           headers: {
@@ -78,15 +81,10 @@ function ShortCard({
       }
 
       const result = await response.json();
-      console.log(result.data[count]);
-      setThumbUpClicked(result.data[count].isLiked);
-      setThumbDownClicked(result.data[count].isDisliked);
-      setLikeCount(result.data[count].likes);
-      setDislikeCount(result.data[count].dislikes);
-      setCommentLength(result.data[count].comments.length);
+      console.log("Shorts detail response :-", result.message);
     } catch (error) {
       if (retryCount > 0) {
-        await shortAllInfo(retryCount - 1);
+        await shortIdInfo(retryCount - 1);
       } else {
         setError(error.message);
       }
@@ -97,12 +95,9 @@ function ShortCard({
 
   useEffect(() => {
     if (token) {
-      setLoading(true);
-      shortAllInfo();
+      shortIdInfo();
     }
-  }, [token, id, userId]);
-
-  console.log(thumbUpClicked, thumbDownClicked);
+  }, [token, id]);
 
   //Like
   const handleThumbUpClick = () => {
@@ -205,10 +200,10 @@ function ShortCard({
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className={`comment-container ${showOptions ? 'open' : ''}`}>
+    <div className={`comment-container ${showOptions ? "open" : ""}`}>
       <div className="shorts-container">
         <div className="shorts-video">
-          <video className="centered-video" src={video_url} controls loop />
+          <video className="centered-video" src={video_url} autoPlay loop/>
           <div className="video-title">
             <div className="channel_details">
               <Avatar
@@ -260,7 +255,7 @@ function ShortCard({
           <div className="icon" onClick={toggleOptions}>
             <CommentSharpIcon />
           </div>
-          <p>{commentLength}</p>
+          <p>{commentLen}</p>
 
           <div className="icon">
             <ReplySharpIcon />
@@ -272,7 +267,7 @@ function ShortCard({
           </div>
         </div>
       </div>
-      <div  className={`comment-container ${showOptions ? 'open' : ''}`}>
+      <div className={`comment-container ${showOptions ? "open" : ""}`}>
         {showOptions && (
           <ShortComment
             token={token}
@@ -280,7 +275,7 @@ function ShortCard({
             shortId={id}
             username={username}
             count={count}
-            commentLength={commentLength}
+            commentLength={commentLen}
           />
         )}
       </div>

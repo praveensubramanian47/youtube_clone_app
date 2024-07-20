@@ -5,20 +5,29 @@
     padding-bottom: 0;
     display: flex;
     justify-content: space-between;
-    /* Corrected spelling */
 }
 
 .playlist_left {
     width: 23rem;
-    /* Fixed width */
     height: 32rem;
     position: relative;
     z-index: 1;
     overflow-y: hidden;
     border-radius: 10px;
-    backdrop-filter: blur(30px);
-    position: sticky;
     flex-shrink: 0;
+}
+
+.background-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-size: cover;
+    background-position: center;
+    filter: blur(30px);
+    z-index: -1;
+    background-color: #000;
 }
 
 .playlist_right {
@@ -31,21 +40,6 @@
 .container {
     padding: 2rem;
     color: white;
-}
-
-.playlist_left::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: url('http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg');
-    background-size: cover;
-    color: black;
-    background-position: center;
-    filter: blur(30px);
-    z-index: -1;
 }
 
 .container .img {
@@ -172,10 +166,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    /* border: 1px solid red; */
     padding: 10px;
-
-
 }
 
 .shorts_content .short_card {

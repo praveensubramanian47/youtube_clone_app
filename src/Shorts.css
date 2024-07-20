@@ -1,6 +1,19 @@
-.Short-content {
+/* .Short-content {
     position: absolute;
     top: 55%;
     left: 50%;
     transform: translate(-50%, -50%);
+} */
+
+.Shorts{
+    flex: 0.9;
+    background-color: #f9f9f9;
+    padding-bottom: 0;
+}
+
+.short{
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

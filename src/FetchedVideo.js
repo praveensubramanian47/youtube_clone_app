@@ -6,6 +6,16 @@ import { useVideo } from "./VideoContext";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
+function setCookie(name, value, days) {
+  let expires = "";
+  if (days) {
+    const date = new Date();
+    date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+    expires = "; expires=" + date.toUTCString();
+  }
+  document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
 function FetchedVideo({
   id,
   title,
@@ -37,20 +47,15 @@ function FetchedVideo({
   }
 
   const handleVideoClick = () => {
-    setVideoDetails({
-      id,
-      videoUrl: encodeURIComponent(video),
-      upload_time: getRelativeTime(upload_time),
-      video_view: formatViewCount(video_view),
-      duration,
-    });
+    setCookie("video_id", id, 1);
     navigate(`/video/${encodeURIComponent(video)}`);
   };
+  
   return (
     <div className="FetchedVideo">
-      <div className="side-video-list" onClick={handleVideoClick}>
-        <div className="FetchedVideo_img_wrapper">
-          <img src={thumbnail} alt="" className="Fetchedvideo_img" />
+      <div className="side-video-list">
+        <div className="FetchedVideo_img_wrapper"  onClick={handleVideoClick}>
+          <img src={thumbnail} alt="" className="Fetchedvideo_img"/>
           <div className="FetchedVideo_duration">{duration}</div>
         </div>
         <div className="vid-info">

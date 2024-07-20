@@ -1,8 +1,8 @@
 .recommendedVideos{
     flex: 0.9;
     padding: 40px 20px;
-    background-color: #f9f9f9;
     padding-bottom: 0;
+    width: min(100%, 950px);
 }
 
 .recommendedVideos > h2{
@@ -21,10 +21,10 @@
     margin-bottom: 16px;
 }
 
+
 .category-list {
     display: flex;
     overflow-x: hidden;
-    /* Disable horizontal scrolling */
 }
 
 .category-item {
@@ -66,3 +66,13 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+@media (max-width: 768px) {
+    .recommendedVideos{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        border: 1px solid black;
+    }
+  }

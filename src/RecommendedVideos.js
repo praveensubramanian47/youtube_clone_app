@@ -6,44 +6,70 @@ import KeyboardArrowRightSharpIcon from "@mui/icons-material/KeyboardArrowRightS
 
 function getCookie(name) {
   const nameEQ = name + "=";
-  const ca = document.cookie.split(';');
+  const ca = document.cookie.split(";");
   for (let i = 0; i < ca.length; i++) {
     let c = ca[i];
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    while (c.charAt(0) === " ") c = c.substring(1, c.length);
     if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
   }
   return null;
 }
 
 function RecommendedVideos() {
-  const categories = [
-    "All",
-    "Gaming",
-    "Music",
-    "Sports",
-    "Movies",
-    "News",
-    "Vocal Music",
-    "Lyrics",
-    "Tamil cinema",
-    "Game Shows",
-    "Computer programming",
-    "Science fiction",
-  ];
-
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [categories, setCategories] = useState(["All"]);
   const categoryPerPage = 10;
 
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingVideos, setLoadingVideos] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [error, setError] = useState(null);
 
-  const token = getCookie('token');
-  const userId = getCookie('user_id');
+  const token = getCookie("token");
+  const userId = getCookie("user_id");
+
+  useEffect(() => {
+    const categoryInfo = async (retryCount = 3) => {
+      try {
+        const response = await fetch(
+          `https://insightech.cloud/videotube/api/public/api/categories/ids-names?user_id=${userId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "Network response was not ok");
+        }
+        const result = await response.json();
+        setCategories([
+          "All",
+          ...result.category.map((category) => category.category),
+        ]);
+      } catch (error) {
+        if (retryCount > 0) {
+          await categoryInfo(retryCount - 1);
+        } else {
+          setError(error.message);
+        }
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    if (token && userId) {
+      categoryInfo();
+    }
+  }, [userId, token]);
 
   const fetchInfo = async (retryCount = 2) => {
     try {
+      setLoadingVideos(true);
       let url;
       if (selectedCategory === "All") {
         url = "https://insightech.cloud/videotube/api/public/api/trending";
@@ -60,9 +86,7 @@ function RecommendedVideos() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.log("Error Response Text:", errorText);
         const errorData = JSON.parse(errorText);
-        
         throw new Error(errorData.message);
       }
 
@@ -70,13 +94,12 @@ function RecommendedVideos() {
       setData(result);
     } catch (error) {
       if (retryCount > 0) {
-        console.log(`Retrying... (${2 - retryCount + 1})`);
         await fetchInfo(retryCount - 1);
       } else {
         setError(error.message);
       }
     } finally {
-      setLoading(false);
+      setLoadingVideos(false);
     }
   };
 
@@ -100,7 +123,7 @@ function RecommendedVideos() {
   };
 
   useEffect(() => {
-    if (token) {
+    if (token && selectedCategory) {
       fetchInfo();
     }
   }, [token, selectedCategory]);
@@ -110,7 +133,7 @@ function RecommendedVideos() {
     Math.min((currentIndex + 1) * categoryPerPage, categories.length)
   );
 
-  if (loading) return <div>Loading...</div>;
+  if (loadingCategories) return <div>Loading categories...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -154,22 +177,26 @@ function RecommendedVideos() {
           <KeyboardArrowRightSharpIcon />
         </button>
       </div>
-      <div className="recommendedVideos_videos">
-        {data.videos.map((item) => (
-          <VideoCard
-            key={item.id}
-            id={item.id}
-            title={item.name}
-            video={item.video_url}
-            thumbnail={item.thumbnail_url}
-            duration={item.duration}
-            channel={item.channel_name}
-            channelImage={item.channel_image}
-            video_view={item.video_viewer}
-            upload_time={item.upload_time}
-          />
-        ))}
-      </div>
+      {loadingVideos ? (
+        <div>Loading videos...</div>
+      ) : (
+        <div className="recommendedVideos_videos">
+          {data.videos.map((item) => (
+            <VideoCard
+              key={item.id}
+              id={item.id}
+              title={item.name}
+              video={item.video_url}
+              thumbnail={item.thumbnail_url}
+              duration={item.duration}
+              channel={item.channel_name}
+              channelImage={item.channel_image}
+              video_view={item.video_view}
+              upload_time={item.upload_time}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,31 @@
-.header{
-    position: sticky;
+.parent {
+  position: relative;
 }
-.app_page{
-    display: flex;   
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+}
+
+.app_page {
+  display: flex;
+}
+
+.sticky-sidebar {
+  position: sticky;
+  top: 100px;
+}
+
+@media (max-width: 768px) {
+  .sticky-sidebar {
+    display: none !important;
+  }
+
+  .app_page {
+    display: flex;
+    flex-direction: column;
+    
+  }
 }

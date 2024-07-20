@@ -3,21 +3,15 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
-import { VideoProvider } from "./VideoContext";
-import { AuthProvider } from "./AuthContext";
-import { UserProvider } from "./UserContext"; // Corrected import
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <React.StrictMode>
-    <UserProvider> {/* Corrected here */}
-      <AuthProvider>
-        <VideoProvider>
-          <App />
-        </VideoProvider>
-      </AuthProvider>
-    </UserProvider>
-  </React.StrictMode>
+  <GoogleOAuthProvider clientId="119743565440-rkv7h2u2idjgt07oucbomjes6t5hhnp8.apps.googleusercontent.com">
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  </GoogleOAuthProvider>
 );
 
 // If you want to start measuring performance in your app, pass a function

@@ -33,6 +33,7 @@ function PlayListVideos() {
   const playlist_name = getCookie("playlist_name");
 
   const [selectedTab, setSelectedTab] = useState("Videos");
+  const [playlistVideos, setPlaylistVideos] = useState([]);
 
   function getRelativeTime(uploadTime) {
     return dayjs(uploadTime).fromNow();
@@ -42,7 +43,6 @@ function PlayListVideos() {
     setSelectedTab(tab);
   };
 
-  //Fetched all video and shorts in the playlist.
   useEffect(() => {
     const fetchVideos = async (retryCount = 3) => {
       try {
@@ -51,8 +51,7 @@ function PlayListVideos() {
           {
             method: "GET",
             headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`, // Include the bearer token here
             },
           }
         );
@@ -61,8 +60,8 @@ function PlayListVideos() {
           throw new Error(errorText || "Network response was not ok");
         }
         const result = await response.json();
-        console.log("playlist:-", result);
         setData(result);
+        setPlaylistVideos(result.videos || []); // Set playlist videos here
       } catch (error) {
         if (retryCount > 0) {
           await fetchVideos(retryCount - 1);
@@ -74,9 +73,8 @@ function PlayListVideos() {
       }
     };
 
-    if (token && userId && playlist_name && playlist_name) {
+    if (token && userId && playlist_name && playlist_id) {
       fetchVideos();
-      // console.log("videos:-",data.videos);
     } else {
       setError(
         "Missing authentication token or user ID or playlist name or id."
@@ -92,6 +90,12 @@ function PlayListVideos() {
     <div className="PlayListVideos">
       {data && (
         <div className="playlist_left">
+          <div
+            className="background-image"
+            style={{
+              backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${data.playlist_thumbnail})`,
+            }}
+          ></div>
           <div className="container">
             <div className="img">
               <img src={data.playlist_thumbnail} alt="" />
@@ -100,7 +104,8 @@ function PlayListVideos() {
             <div className="details">
               <h6>{username}</h6>
               <p>
-                {data.total_videos} Vidoes views Last updated on {getRelativeTime(data.upload_time)}
+                {data.total_videos} Videos views Last updated on{" "}
+                {getRelativeTime(data.upload_time)}
               </p>
             </div>
             <div className="icons">
@@ -112,7 +117,10 @@ function PlayListVideos() {
               </div>
             </div>
             <div className="playlist_btns">
-              <div className="play_all">
+              <div
+                className="play_all"
+                onClick={() => videoPlayerRef.current.handlePlayAll()}
+              >
                 <PlayArrowSharpIcon />
                 <span>Play all</span>
               </div>
@@ -147,19 +155,19 @@ function PlayListVideos() {
         >
           {selectedTab === "Videos" ? (
             <>
-              {data.videos.map((video) => (
-              <PlaylistVideocard
-                key={video.id}
-                id={video.id}
-                name={video.name}
-                video={video.video_url}
-                thumbnail={video.thumbnail_url}
-                duration={video.duration}
-                channel_name={video.channel_name}
-                channel_image={video.channel_image}
-                video_viewer={video.video_viewer}
-                upload_time={video.upload_time}
-              />
+              {playlistVideos.map((video) => (
+                <PlaylistVideocard
+                  key={video.id}
+                  id={video.id}
+                  name={video.name}
+                  video={video.video_url}
+                  thumbnail={video.thumbnail_url}
+                  duration={video.duration}
+                  channel_name={video.channel_name}
+                  channel_image={video.channel_image}
+                  video_viewer={video.video_viewer}
+                  upload_time={video.upload_time}
+                />
               ))}
             </>
           ) : (

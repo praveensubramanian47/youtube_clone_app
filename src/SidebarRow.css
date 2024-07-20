@@ -43,3 +43,9 @@
 .sidebarRow.selected > .sidebarRow_title{
     font-weight: bold;
 }
+
+.sidebarRow_icon{
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+}

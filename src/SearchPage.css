@@ -1,40 +1,63 @@
-/* SearchPage.css */
 .searchPage {
-    flex: 0.8;
-    background-color: #f9f9f9;
-    padding: 20px;
+  flex: 0.8;
+  background-color: #f9f9f9;
+  padding: 20px;
+  overflow-x: hidden;
 }
 
 .searchPage_filter {
-    display: flex;
-    align-items: center;
-    color: #606060;
-    font-size: xx-small !important;
-    margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #606060;
+  font-size: xx-small !important;
+  margin-bottom: 10px;
 }
 
-.searchPage_filter > h2 {
-    margin-left: 10px;
+.searchPage_filter h5 {
+  font-size: 1.3rem;
+  margin-top: 5px;
 }
 
 .searchPage hr {
-    height: 1px;
-    border: 0;
-    background-color: lightgray;
-    margin: 10px 0;
+  height: 1px;
+  border: 0;
+  background-color: lightgray;
+  margin: 10px 0;
 }
 
-.shorts_section{
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 16%;
-
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
+.shorts_controls {
+  display: flex;
+  align-items: center;
 }
 
-.shorts-row{
-    display: grid;
-    padding: 3px;
-    grid-template-rows:min-content ;
+.scrollButton {
+  cursor: pointer;
+}
+
+.shorts_section {
+  display: flex;
+  /* Use flexbox for horizontal scrolling */
+  overflow-x: auto;
+  /* Enable horizontal scrolling */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.shorts_section::-webkit-scrollbar {
+  display: none;
+  /* Hide scrollbar for better UI */
+}
+
+.shorts-row {
+  flex: 0 0 auto;
+  /* Prevent shrinking and growing */
+  margin-right: 10px;
+  /* Space between shorts */
+}
+
+.video_row {
+  margin-top: 2rem;
 }

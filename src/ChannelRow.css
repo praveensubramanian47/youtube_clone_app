@@ -20,8 +20,11 @@
     margin: 10px 60px;
 }
 
-.channelRow .channelRow_text > h4{
+.channel_edit {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    gap: 10rem;
+}
+
+.edit_icon{
+    font-size: 10px;
 }

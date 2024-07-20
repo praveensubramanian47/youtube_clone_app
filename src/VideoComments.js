@@ -1,24 +1,31 @@
 import React, { useState, useEffect } from "react";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
-import { useVideo } from "./VideoContext";
 import "./VideoComments.css";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(relativeTime);
 
-function VideoComments({ token, userId, videoId, username }) {
+function VideoComments({ token, userId, videoId, username, profile_image }) {
   const [comments, setComments] = useState([]);
   const [likedCommentIds, setLikedCommentIds] = useState([]);
   const [dislikedCommentIds, setDislikedCommentIds] = useState([]);
+  const [likedReplyIds, setLikedReplyIds] = useState([]);
+  const [dislikedReplyIds, setDislikedReplyIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [visibleReplies, setVisibleReplies] = useState({});
+  const [visibleReplyInputs, setVisibleReplyInputs] = useState({});
+  const [commentText, setCommentText] = useState("");
+  const [replyText, setReplyText] = useState({});
 
-  const { videoDetails } = useVideo();
+  console.log("video id:-", videoId);
 
   useEffect(() => {
-    console.log(token);
     const videoInfo = async (retryCount = 3) => {
       try {
         const response = await fetch(
-          `https://insightech.cloud/videotube/api/public/api/videoplay?video_id=${videoDetails.id}&user_id=${userId}`,
+          `https://insightech.cloud/videotube/api/public/api/videoplay?video_id=${videoId}&user_id=${userId}`,
           {
             method: "GET",
             headers: {
@@ -31,22 +38,35 @@ function VideoComments({ token, userId, videoId, username }) {
           throw new Error(errorText || "Network response was not ok");
         }
         const result = await response.json();
-        console.log("Video Info:", result); // Log the response data
+        const comments = result.video.comments || []; // Add a fallback for comments array
 
         // Set liked comment ids
-        const likedCommentIdsArray = result.video.comments
+        const likedCommentIdsArray = comments
           .filter((comment) => comment.isLiked)
           .map((comment) => comment.id);
         setLikedCommentIds(likedCommentIdsArray);
 
         // Set disliked comment ids
-        const dislikedCommentIdsArray = result.video.comments
+        const dislikedCommentIdsArray = comments
           .filter((comment) => comment.isDisLiked)
           .map((comment) => comment.id);
-        console.log("Disliked Comment IDs:", dislikedCommentIdsArray);
         setDislikedCommentIds(dislikedCommentIdsArray);
 
-        setComments(result.video.comments); // Ensure comments are set
+        // Set liked reply ids
+        const likedReplyIdsArray = comments
+          .flatMap((comment) => comment.replies)
+          .filter((reply) => reply.isLiked)
+          .map((reply) => reply.id);
+        setLikedReplyIds(likedReplyIdsArray);
+
+        // Set disliked reply ids
+        const dislikedReplyIdsArray = comments
+          .flatMap((comment) => comment.replies)
+          .filter((reply) => reply.isDisLiked)
+          .map((reply) => reply.id);
+        setDislikedReplyIds(dislikedReplyIdsArray);
+
+        setComments(comments); // Ensure comments are set
       } catch (error) {
         if (retryCount > 0) {
           await videoInfo(retryCount - 1);
@@ -61,24 +81,24 @@ function VideoComments({ token, userId, videoId, username }) {
     if (token) {
       videoInfo();
     }
-  }, [token, videoDetails.id]);
+  }, [token, videoId, userId]);
 
+  
   useEffect(() => {
-    console.log("Liked Id's:", likedCommentIds);
-    console.log("DisLiked Id's:", dislikedCommentIds);
-  }, [likedCommentIds, dislikedCommentIds]);
+    console.log("Liked Comment Ids:", likedCommentIds);
+    console.log("Disliked Comment Ids:", dislikedCommentIds);
+    console.log("Liked Reply Ids:", likedReplyIds);
+    console.log("Disliked Reply Ids:", dislikedReplyIds);
+  }, [likedCommentIds, dislikedCommentIds, likedReplyIds, dislikedReplyIds]);
 
-  //Add new comments
+  // Add new comments
   const handleAddComment = async () => {
-    const commentText = document.querySelector(".add-comment input").value;
-
     const requestBody = {
       video_id: videoId,
       comment: commentText,
       user_name: username,
       user_id: userId,
-      profile_image:
-        "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/WeAreGoingOnBullrun.jpg",
+      profile_image: profile_image,
     };
 
     console.log(requestBody);
@@ -99,19 +119,19 @@ function VideoComments({ token, userId, videoId, username }) {
 
         if (response.ok) {
           const data = await response.json();
+          console.log(data.message);
           if (data.code === 200) {
             const newComment = {
               id: data.comment.comment_id, // Assuming the response includes the new comment ID
               comment: data.comment.comment,
               user_name: data.comment.user_name,
-              profile_image:
-                "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/WeAreGoingOnBullrun.jpg",
+              profile_image: profile_image,
               likes: 0,
               dislikes: 0,
+              replies: [], // Initialize an empty replies array
             };
             setComments([...comments, newComment]);
-            console.log("All comments:-",comments);
-            document.querySelector(".add-comment input").value = "";
+            setCommentText(""); // Clear comment text after adding
           } else {
             console.error("Error from comment else:", data.message);
           }
@@ -124,20 +144,101 @@ function VideoComments({ token, userId, videoId, username }) {
     }
   };
 
-  const handleCancelComment = () => {
-    document.querySelector(".add-comment input").value = "";
+  const handleAddReply = async (commentId) => {
+    const requestBody = {
+      video_id: videoId,
+      comment_id: commentId,
+      reply: replyText[commentId], // Using replyText state for the reply content
+      user_name: username,
+      user_id: userId,
+      profile_image: profile_image,
+    };
+
+    console.log("requestBody from reply:- ", requestBody);
+
+    if (replyText[commentId]?.trim() !== "") {
+      try {
+        const response = await fetch(
+          "https://insightech.cloud/videotube/api/public/api/reply-to-comment",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.code === 200) {
+            const newReply = {
+              id: data.reply.reply_id, // Assuming the response includes the new reply ID
+              comment: replyText[commentId],
+              user_name: data.reply.user_name,
+              profile_image: profile_image,
+              likes: 0,
+              dislikes: 0,
+            };
+            setComments((prevComments) =>
+              prevComments.map((comment) =>
+                comment.id === commentId
+                  ? { ...comment, replies: [...comment.replies, newReply] }
+                  : comment
+              )
+            );
+            setReplyText((prevReplyText) => ({
+              ...prevReplyText,
+              [commentId]: "", // Clear reply input after successful submission
+            }));
+
+            setVisibleReplyInputs((prevVisibleReplyInputs) => ({
+              ...prevVisibleReplyInputs,
+              [commentId]: false, // Hide reply input after successful submission
+            }));
+
+            console.log("comments:-", comments);
+          } else {
+            console.error("Error from reply else:", data.message);
+          }
+        } else {
+          console.error("Error from reply catch:", await response.text());
+        }
+      } catch (error) {
+        console.error("Error from reply catch:", error);
+      }
+    }
   };
 
-  const handleCommentThumbUp = async (comment) => {
-    const isAlreadyLiked = likedCommentIds.includes(comment.id);
+  const handleCancelComment = () => {
+    setCommentText(""); // Clear comment/reply text on cancel
+  };
+
+  const handleCancelReply = (commentId) => {
+    // Clear the reply text and hide the reply input for the specific comment
+    setReplyText((prevReplyText) => ({
+      ...prevReplyText,
+      [commentId]: "", // Clear reply input for specific comment
+    }));
+    
+    setVisibleReplyInputs((prevVisibleReplyInputs) => ({
+      ...prevVisibleReplyInputs,
+      [commentId]: false, // Hide the reply input for specific comment
+    }));
+  };
+  
+
+  const handleThumbUp = async (item, isReply = false) => {
+    const isAlreadyLiked = isReply
+      ? likedReplyIds.includes(item.id)
+      : likedCommentIds.includes(item.id);
     const requestBody = {
-      comment_id: comment.id,
+      comment_id: item.id,
       user_id: userId,
       user_name: username,
       is_like: !isAlreadyLiked,
     };
-
-    console.log(requestBody);
 
     try {
       const response = await fetch(
@@ -154,44 +255,83 @@ function VideoComments({ token, userId, videoId, username }) {
       const result = await response.json();
       if (result.code === 200) {
         setComments((prevComments) =>
-          prevComments.map((c) =>
-            c.id === comment.id
+          prevComments.map((comment) =>
+            comment.id === item.id
               ? {
-                  ...c,
+                  ...comment,
                   isLiked: !isAlreadyLiked,
-                  likes: !isAlreadyLiked ? c.likes + 1 : c.likes - 1,
+                  likes: !isAlreadyLiked
+                    ? comment.likes + 1
+                    : comment.likes - 1,
                   isDisLiked: false,
-                  dislikes: c.isDisLiked ? c.dislikes - 1 : c.dislikes,
+                  dislikes: comment.isDisLiked
+                    ? comment.dislikes - 1
+                    : comment.dislikes,
                 }
-              : c
+              : {
+                  ...comment,
+                  replies: comment.replies.map((reply) =>
+                    reply.id === item.id
+                      ? {
+                          ...reply,
+                          isLiked: !isAlreadyLiked,
+                          likes: !isAlreadyLiked
+                            ? reply.likes + 1
+                            : reply.likes - 1,
+                          isDisLiked: false,
+                          dislikes: reply.isDisLiked
+                            ? reply.dislikes - 1
+                            : reply.dislikes,
+                        }
+                      : reply
+                  ),
+                }
           )
         );
 
-        if (!isAlreadyLiked) {
-          setLikedCommentIds((prevIds) => [...prevIds, comment.id]);
+        if (isReply) {
+          if (!isAlreadyLiked) {
+            setLikedReplyIds((prevIds) => [...prevIds, item.id]);
+          } else {
+            setLikedReplyIds((prevIds) =>
+              prevIds.filter((replyId) => replyId !== item.id)
+            );
+          }
+
+          setDislikedReplyIds((prevIds) =>
+            prevIds.filter((replyId) => replyId !== item.id)
+          );
         } else {
-          setLikedCommentIds((prevIds) =>
-            prevIds.filter((id) => id !== comment.id)
+          if (!isAlreadyLiked) {
+            setLikedCommentIds((prevIds) => [...prevIds, item.id]);
+          } else {
+            setLikedCommentIds((prevIds) =>
+              prevIds.filter((commentId) => commentId !== item.id)
+            );
+          }
+
+          setDislikedCommentIds((prevIds) =>
+            prevIds.filter((commentId) => commentId !== item.id)
           );
         }
       } else {
-        console.error("Error from like:", result.message);
+        console.error("Failed to update like status:", result.message);
       }
     } catch (error) {
-      console.error("Error from like:", error);
+      console.error("Error updating like status:", error);
     }
   };
 
-  const handleCommentThumbDown = async (comment) => {
-    const isAlreadyDisliked = dislikedCommentIds.includes(comment.id);
+  const handleThumbDown = async (item, isReply = false) => {
+    const isAlreadyDisliked = isReply
+      ? dislikedReplyIds.includes(item.id)
+      : dislikedCommentIds.includes(item.id);
     const requestBody = {
-      comment_id: comment.id,
+      comment_id: item.id,
       user_id: userId,
       user_name: username,
       is_dislike: !isAlreadyDisliked,
     };
-
-    console.log(requestBody);
 
     try {
       const response = await fetch(
@@ -208,59 +348,119 @@ function VideoComments({ token, userId, videoId, username }) {
       const result = await response.json();
       if (result.code === 200) {
         setComments((prevComments) =>
-          prevComments.map((c) =>
-            c.id === comment.id
+          prevComments.map((comment) =>
+            comment.id === item.id
               ? {
-                  ...c,
+                  ...comment,
+                  isLiked: false,
+                  likes: comment.isLiked ? comment.likes - 1 : comment.likes,
                   isDisLiked: !isAlreadyDisliked,
                   dislikes: !isAlreadyDisliked
-                    ? c.dislikes + 1
-                    : c.dislikes - 1,
-                  isLiked: false,
-                  likes: c.isLiked ? c.likes - 1 : c.likes,
+                    ? comment.dislikes + 1
+                    : comment.dislikes - 1,
                 }
-              : c
+              : {
+                  ...comment,
+                  replies: comment.replies.map((reply) =>
+                    reply.id === item.id
+                      ? {
+                          ...reply,
+                          isLiked: false,
+                          likes: reply.isLiked ? reply.likes - 1 : reply.likes,
+                          isDisLiked: !isAlreadyDisliked,
+                          dislikes: !isAlreadyDisliked
+                            ? reply.dislikes + 1
+                            : reply.dislikes - 1,
+                        }
+                      : reply
+                  ),
+                }
           )
         );
 
-        if (!isAlreadyDisliked) {
-          setDislikedCommentIds((prevIds) => [...prevIds, comment.id]);
+        if (isReply) {
+          if (!isAlreadyDisliked) {
+            setDislikedReplyIds((prevIds) => [...prevIds, item.id]);
+          } else {
+            setDislikedReplyIds((prevIds) =>
+              prevIds.filter((replyId) => replyId !== item.id)
+            );
+          }
+
+          setLikedReplyIds((prevIds) =>
+            prevIds.filter((replyId) => replyId !== item.id)
+          );
         } else {
-          setDislikedCommentIds((prevIds) =>
-            prevIds.filter((id) => id !== comment.id)
+          if (!isAlreadyDisliked) {
+            setDislikedCommentIds((prevIds) => [...prevIds, item.id]);
+          } else {
+            setDislikedCommentIds((prevIds) =>
+              prevIds.filter((commentId) => commentId !== item.id)
+            );
+          }
+
+          setLikedCommentIds((prevIds) =>
+            prevIds.filter((commentId) => commentId !== item.id)
           );
         }
       } else {
-        console.error("Error from dislike:", result.message);
+        console.error("Failed to update dislike status:", result.message);
       }
     } catch (error) {
-      console.error("Error from dislike:", error);
+      console.error("Error updating dislike status:", error);
     }
   };
 
+  const handleShowReplyInput = (commentId) => {
+    setVisibleReplyInputs({
+      ...visibleReplyInputs,
+      [commentId]: true,
+    });
+  };
+
+  const handleReplyChange = (commentId, text) => {
+    setReplyText((prevReplyText) => ({
+      ...prevReplyText,
+      [commentId]: text,
+    }));
+  };
+
+  const handleChange = (event) => {
+    setCommentText(event.target.value); // Update comment/reply text
+  };
+
+  const toggleReplies = (commentId) => {
+    setVisibleReplies((prevVisibleReplies) => ({
+      ...prevVisibleReplies,
+      [commentId]: !prevVisibleReplies[commentId],
+    }));
+  };
+
+  function getRelativeTime(uploadTime) {
+    return dayjs(uploadTime).fromNow();
+  }
+
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
-
-
-
   return (
     <div className="addComments">
       <div className="comment">
         <h4>{comments.length} Comments</h4>
         <div className="comment">
-          {comments.map((comment, index) => (
+          {comments.length > 0 && comments.map((comment, index) => (
             <div key={index} className="cmd">
               <div className="cmd-header">
                 <img src={comment.profile_image} alt={comment.user_name} />
                 <h3>
-                  {comment.user_name}
-                  <span> 1 day ago</span>
+                  {comment.user_name} . 
+                  <span style={{color: "gray", fontSize: "13px", marginLeft: "2px"}}>{getRelativeTime(comment.upload_time)}</span>
                 </h3>
               </div>
               <p>{comment.comment}</p>
               <div className="comment-action">
                 <ThumbUpIcon
-                  onClick={() => handleCommentThumbUp(comment)}
+                  onClick={() => handleThumbUp(comment)}
                   className="action"
                   sx={{
                     color: likedCommentIds.includes(comment.id)
@@ -271,7 +471,7 @@ function VideoComments({ token, userId, videoId, username }) {
                 {comment.likes}
 
                 <ThumbDownIcon
-                  onClick={() => handleCommentThumbDown(comment)}
+                  onClick={() => handleThumbDown(comment)}
                   className="action"
                   sx={{
                     color: dislikedCommentIds.includes(comment.id)
@@ -280,22 +480,129 @@ function VideoComments({ token, userId, videoId, username }) {
                   }}
                 />
                 {comment.dislikes}
+                <div
+                  className="reply"
+                  onClick={() => handleShowReplyInput(comment.id)}
+                >
+                  <p>Reply</p>
+                </div>
               </div>
+
+              {visibleReplyInputs[comment.id] && (
+                <div className="add-reply">
+                  <input
+                    id={`reply-input-${comment.id}`}
+                    type="text"
+                    placeholder="Add a public reply"
+                    value={replyText[comment.id] || ""}
+                    onChange={(e) =>
+                      handleReplyChange(comment.id, e.target.value)
+                    }
+                  />
+                  <hr />
+                  <div className="cmd_btns">
+                    <button
+                      className="reply_btn1"
+                      onClick={() => handleCancelReply(comment.id)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="reply_btn2"
+                      onClick={() => handleAddReply(comment.id)}
+                    >
+                      Reply
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Display the new reply directly below the comment */}
+              {comment.newReply && (
+                <div className="new-reply">
+                  <div className="cmd-header">
+                    <img
+                      src={comment.newReply.profile_image}
+                      alt={comment.newReply.user_name}
+                    />
+                    <h3>
+                      {comment.newReply.user_name}
+                      <span> Just now</span>
+                    </h3>
+                  </div>
+                  <p>{comment.newReply.comment}</p>
+                  <div className="comment-action">
+                    <ThumbUpIcon className="action" sx={{ color: "gray" }} />
+                    {comment.newReply.likes}
+                    <ThumbDownIcon className="action" sx={{ color: "gray" }} />
+                    {comment.newReply.dislikes}
+                  </div>
+                </div>
+              )}
+
+              <div className="cmd_reply">
+                <p onClick={() => toggleReplies(comment.id)}>Replies</p>
+              </div>
+              {visibleReplies[comment.id] && (
+                <div className="replies-section">
+                  {comment.replies.map((reply) => (
+                    <div key={reply.id} className="reply">
+                      <div className="cmd-header">
+                        <img src={reply.profile_image} alt={reply.user_name} />
+                        <h3>
+                          {reply.user_name} . 
+                          <span style={{color: "gray", fontSize: "12px", marginLeft: "2px"}}>{getRelativeTime(reply.upload_time)}</span>
+                        </h3>
+                      </div>
+                      <p>{reply.comment}</p>
+                      <div className="comment-action">
+                        <ThumbUpIcon
+                          onClick={() => handleThumbUp(reply, true)}
+                          className="action"
+                          sx={{
+                            color: likedReplyIds.includes(reply.id)
+                              ? "black"
+                              : "gray",
+                            fontSize: "18px",
+                          }}
+                        />
+                        {reply.likes}
+                        <ThumbDownIcon
+                          onClick={() => handleThumbDown(reply, true)}
+                          className="action"
+                          sx={{
+                            color: dislikedReplyIds.includes(reply.id)
+                              ? "black"
+                              : "gray",
+                            fontSize: "18px",
+                          }}
+                        />
+                        {reply.dislikes}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
       </div>
       <div className="add-comment">
-        <input type="text" placeholder="Add a comment.." />
-          <hr />
-          <div className="cmd_btns">
-            <button className="btn1" onClick={handleCancelComment}>
-              Cancel
-            </button>
-            <button className="btn2" onClick={handleAddComment}>
-              Comment
-            </button>
-          </div>
+        <input
+          type="text"
+          placeholder="Add a comment.."
+          value={commentText}
+          onChange={handleChange}
+        />
+        <hr />
+        <div className="cmd_btns">
+          <button className="btn1" onClick={handleCancelComment}>
+            Cancel
+          </button>
+          <button className="btn2" onClick={handleAddComment}>
+            Comment
+          </button>
+        </div>
       </div>
     </div>
   );
